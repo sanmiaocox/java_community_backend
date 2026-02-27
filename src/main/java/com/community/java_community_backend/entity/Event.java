@@ -61,5 +61,8 @@ public class Event {
     // 关系映射
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
     private List<EventParticipant> eventParticipants;
+    
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    private List<Feed> feeds;
 }
 

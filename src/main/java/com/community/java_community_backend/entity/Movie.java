@@ -38,7 +38,7 @@ public class Movie {
     @Column(length = 2000)
     private String posterUrls; // JSON数组字符串
     
-    @Column(precision = 3, scale = 1)
+    @Column
     private Double rating;
     
     @Column(length = 50)
@@ -70,15 +70,6 @@ public class Movie {
     
     @Column(length = 500)
     private String doubanUrl;
-    
-    @Column(length = 500)
-    private String zhihuUrl;
-    
-    @Column(length = 500)
-    private String imdbUrl;
-    
-    @Column(length = 500)
-    private String rottenTomatoesUrl;
     
     @Column(length = 500)
     private String tmdbUrl;

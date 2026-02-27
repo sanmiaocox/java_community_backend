@@ -31,10 +31,14 @@ public class Feed {
     @JoinColumn(name = "movie_id")
     private Movie movie;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id")
+    private Event event;
+    
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     
-    @Column(precision = 3, scale = 1)
+    @Column
     private Double rating;
     
     @Column(nullable = false)

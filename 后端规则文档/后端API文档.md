@@ -1,6 +1,6 @@
 # 电影交流社区后端API文档
 
-> **最后更新**: 2026-02-26  
+> **最后更新**: 2026-02-27  
 > **基础URL**: `http://localhost:7070`  
 > **API版本**: v1.0
 
@@ -75,9 +75,9 @@
 
 ## 认证说明
 
-### JWT Token认证（待实现）
+### JWT Token认证
 
-登录成功后，服务器返回JWT Token，后续请求需在Header中携带：
+登录成功后，服务器返回JWT Token，后续需要认证的请求需在Header中携带：
 
 ```
 Authorization: Bearer {token}
@@ -85,7 +85,22 @@ Authorization: Bearer {token}
 
 ### 当前状态
 
-目前测试接口和TMDB接口已放行，无需认证。用户相关接口待实现JWT认证。
+- ✅ 注册接口已实现
+- ✅ 登录接口已实现
+- ✅ JWT Token生成已实现
+- ⏳ JWT过滤器待实现（Token验证中间件）
+
+### Token格式
+
+```
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTcwOTAxMDAwMCwiZXhwIjoxNzA5NjE0ODAwfQ.xxxxx
+```
+
+Token包含：
+- 用户ID（subject）
+- 用户名（username）
+- 签发时间（iat）
+- 过期时间（exp，默认7天）
 
 ---
 
@@ -293,20 +308,32 @@ curl "http://localhost:7070/api/tmdb/top-rated?page=1"
 
 ---
 
-## 用户接口（待开发）
+## 用户接口
 
 ### POST /api/auth/register
 
 用户注册。
 
+**请求头**:
+```
+Content-Type: application/json
+```
+
 **请求体**:
 ```json
 {
-  "username": "testuser",
-  "phone": "13800138000",
-  "password": "password123"
+  "username": "test",
+  "phone": "12344445555",
+  "password": "123456"
 }
 ```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 | 校验规则 |
+|------|------|------|------|---------|
+| username | string | 是 | 用户名 | 2-50个字符 |
+| phone | string | 是 | 手机号 | 11位，1开头 |
+| password | string | 是 | 密码 | 6-20个字符 |
 
 **响应示例**:
 ```json
@@ -317,8 +344,38 @@ curl "http://localhost:7070/api/tmdb/top-rated?page=1"
     "id": 1,
     "username": "testuser",
     "phone": "13800138000",
-    "avatar": null
+    "avatar": null,
+    "createdAt": "2026-02-27T10:30:00"
   }
+}
+```
+
+**错误响应**:
+
+用户名已存在：
+```json
+{
+  "code": 1001,
+  "message": "用户名已存在",
+  "data": null
+}
+```
+
+手机号已注册：
+```json
+{
+  "code": 1002,
+  "message": "手机号已被注册",
+  "data": null
+}
+```
+
+参数校验失败：
+```json
+{
+  "code": 400,
+  "message": "参数校验失败",
+  "data": null
 }
 ```
 
@@ -328,6 +385,11 @@ curl "http://localhost:7070/api/tmdb/top-rated?page=1"
 
 用户登录。
 
+**请求头**:
+```
+Content-Type: application/json
+```
+
 **请求体**:
 ```json
 {
@@ -336,26 +398,44 @@ curl "http://localhost:7070/api/tmdb/top-rated?page=1"
 }
 ```
 
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| phone | string | 是 | 手机号 |
+| password | string | 是 | 密码 |
+
 **响应示例**:
 ```json
 {
   "code": 200,
   "message": "登录成功",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTcwOTAxMDAwMCwiZXhwIjoxNzA5NjE0ODAwfQ.xxxxx",
     "user": {
       "id": 1,
       "username": "testuser",
       "phone": "13800138000",
-      "avatar": "http://example.com/avatar.jpg"
+      "avatar": null,
+      "createdAt": "2026-02-27T10:30:00"
     }
   }
 }
 ```
 
+**错误响应**:
+
+手机号或密码错误：
+```json
+{
+  "code": 1003,
+  "message": "手机号或密码错误",
+  "data": null
+}
+```
+
 ---
 
-### GET /api/user/profile
+### GET /api/user/profile（待开发）
 
 获取当前用户信息。
 
@@ -695,17 +775,39 @@ Authorization: Bearer {token}
 
 ## 错误码说明
 
-| 错误码 | 说明 |
-|--------|------|
-| 1001 | 用户名已存在 |
-| 1002 | 手机号已存在 |
-| 1003 | 用户名或密码错误 |
-| 1004 | Token无效或已过期 |
-| 2001 | 动态不存在 |
-| 2002 | 无权限操作 |
-| 3001 | 电影不存在 |
-| 4001 | 活动不存在 |
-| 4002 | 活动已满员 |
+| 错误码 | 说明 | 接口 |
+|--------|------|------|
+| 200 | 成功 | 所有接口 |
+| 400 | 参数校验失败 | 所有接口 |
+| 401 | 未授权（未登录） | 需要认证的接口 |
+| 403 | 禁止访问（无权限） | 需要权限的接口 |
+| 404 | 资源不存在 | 所有接口 |
+| 500 | 服务器内部错误 | 所有接口 |
+| 1001 | 用户名已存在 | 注册接口 |
+| 1002 | 手机号已存在 | 注册接口 |
+| 1003 | 用户名或密码错误 | 登录接口 |
+| 1004 | Token无效或已过期 | 需要认证的接口 |
+| 2001 | 动态不存在 | 动态相关接口 |
+| 2002 | 无权限操作 | 动态相关接口 |
+| 3001 | 电影不存在 | 电影相关接口 |
+| 4001 | 活动不存在 | 活动相关接口 |
+| 4002 | 活动已满员 | 活动相关接口 |
+
+---
+
+## 更新日志
+
+### 2026-02-27
+- ✅ 实现用户注册接口
+- ✅ 实现用户登录接口
+- ✅ 添加JWT Token认证
+- ✅ 添加参数校验
+- ✅ 添加全局异常处理
+- 📝 更新API文档
+
+### 2026-02-26
+- ✅ 创建API文档
+- ✅ 实现TMDB接口
 
 ---
 

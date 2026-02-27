@@ -4,8 +4,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Spring Security配置类
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -13,20 +17,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 关闭跨域防护（方便本地测试，生产环境按需开启）
+                // 关闭CSRF（使用JWT不需要CSRF保护）
                 .csrf(csrf -> csrf.disable())
+                
+                // 配置Session管理为无状态（使用JWT）
+                .sessionManagement(session -> 
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                
                 // 配置请求授权规则
                 .authorizeHttpRequests(auth -> auth
-                        // 核心：放行测试接口
+                        // 放行测试接口
                         .requestMatchers("/hello").permitAll()
+                        // 放行TMDB接口
                         .requestMatchers("/api/tmdb/**").permitAll()
-                        // 其他接口需要认证（登录后才能访问，按需调整）
-                        .anyRequest().authenticated()
+                        // 放行认证接口（注册、登录）
+                        .requestMatchers("/api/auth/**").permitAll()
+                        // 其他接口需要认证（后续实现JWT过滤器后生效）
+                        .anyRequest().permitAll()  // 暂时全部放行，方便测试
                 )
-                // 禁用表单登录，避免自动跳转到登录页面
+                
+                // 禁用表单登录
                 .formLogin(form -> form.disable())
-                // 使用 HTTP Basic 认证（可选，或者完全禁用）
+                
+                // 禁用HTTP Basic认证
                 .httpBasic(basic -> basic.disable());
+                
         return http.build();
     }
 }
