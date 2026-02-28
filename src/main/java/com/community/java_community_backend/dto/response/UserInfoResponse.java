@@ -20,6 +20,7 @@ public class UserInfoResponse {
     private String username;
     private String phone;
     private String avatar;
+    private String bio;
     private LocalDateTime createdAt;
     
     /**
@@ -32,6 +33,7 @@ public class UserInfoResponse {
         response.setUsername(user.getUsername());
         response.setPhone(user.getPhone());
         response.setAvatar(user.getAvatar());
+        response.setBio(user.getBio());
         response.setCreatedAt(user.getCreatedAt());
         return response;
     }

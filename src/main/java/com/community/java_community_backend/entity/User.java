@@ -38,6 +38,9 @@ public class User {
     @Column(length = 500)
     private String avatar;
     
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+    
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

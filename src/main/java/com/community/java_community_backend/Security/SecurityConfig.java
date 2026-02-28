@@ -29,12 +29,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 放行测试接口
                         .requestMatchers("/hello").permitAll()
-                        // 放行TMDB接口
-                        .requestMatchers("/api/tmdb/**").permitAll()
                         // 放行认证接口（注册、登录）
                         .requestMatchers("/api/auth/**").permitAll()
-                        // 其他接口需要认证（后续实现JWT过滤器后生效）
-                        .anyRequest().permitAll()  // 暂时全部放行，方便测试
+                        // 其他所有接口都需要认证（需要Token）
+                        .anyRequest().permitAll()  // 暂时全部放行，后续实现JWT过滤器后改为authenticated()
                 )
                 
                 // 禁用表单登录

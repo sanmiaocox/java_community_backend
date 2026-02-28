@@ -457,6 +457,7 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(11) NOT NULL UNIQUE COMMENT '手机号',
     password VARCHAR(255) NOT NULL COMMENT '密码（加密）',
     avatar VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
+    bio TEXT DEFAULT NULL COMMENT '个人简介',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_user_code (user_code),
@@ -465,7 +466,9 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户表';
 ```
 
-### 如果表已存在，添加user_code字段
+### 如果表已存在，添加字段
+
+#### 添加user_code字段
 
 ```sql
 -- 步骤1：添加字段（允许NULL）
@@ -483,6 +486,15 @@ ALTER TABLE users ADD UNIQUE KEY uk_user_code (user_code);
 CREATE INDEX idx_user_code ON users(user_code);
 ```
 
+#### 添加bio字段（个人简介）
+
+```sql
+-- 为users表添加个人简介字段
+ALTER TABLE users 
+ADD COLUMN bio TEXT DEFAULT NULL COMMENT '个人简介' 
+AFTER avatar;
+```
+
 ---
 
 ## 更新日志
@@ -490,6 +502,7 @@ CREATE INDEX idx_user_code ON users(user_code);
 ### 2026-02-28
 - ✅ 添加user_code字段（用户唯一标识）
 - ✅ 添加user_code唯一约束和索引
+- ✅ 添加bio字段（个人简介）
 - ✅ 提供现有数据迁移方案
 
 ### 2026-02-27

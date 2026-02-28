@@ -1,7 +1,7 @@
 # 电影交流社区后端API文档
 
-> **最后更新**: 2026-02-27  
-> **基础URL**: `http://localhost:7070`  
+> **最后更新**: 2026-02-28  
+> **基础URL**: 本机url`http://localhost:7070`  安卓虚拟机url‘http://10.0.2.2:7070’
 > **API版本**: v1.0
 
 ---
@@ -10,14 +10,9 @@
 
 1. [接口规范](#接口规范)
 2. [认证说明](#认证说明)
-3. [测试接口](#测试接口)
-4. [TMDB电影接口](#tmdb电影接口)
-5. [用户接口](#用户接口-待开发)
-6. [动态接口](#动态接口-待开发)
-7. [评论接口](#评论接口-待开发)
-8. [点赞接口](#点赞接口-待开发)
-9. [收藏接口](#收藏接口-待开发)
-10. [活动接口](#活动接口-待开发)
+3. [已实现接口](#已实现接口)
+4. [待实现接口](#待实现接口)
+5. [错误码说明](#错误码说明)
 
 ---
 
@@ -48,28 +43,10 @@
 
 ### 分页参数
 
-需要分页的接口统一使用以下参数：
-
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| page | int | 否 | 1 | 页码（从1开始） |
+| page | int | 否 | 0 | 页码（从0开始） |
 | size | int | 否 | 20 | 每页数量 |
-
-### 分页响应格式
-
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "content": [],
-    "totalElements": 100,
-    "totalPages": 5,
-    "size": 20,
-    "number": 0
-  }
-}
-```
 
 ---
 
@@ -77,20 +54,15 @@
 
 ### JWT Token认证
 
-登录成功后，服务器返回JWT Token，后续需要认证的请求需在Header中携带：
+**重要规则**：除了 `/hello` 和 `/api/auth/**` 接口外，所有接口都需要Token认证！
+
+登录成功后，服务器返回JWT Token，后续请求需在Header中携带：
 
 ```
 Authorization: Bearer {token}
 ```
 
-### 当前状态
-
-- ✅ 注册接口已实现
-- ✅ 登录接口已实现
-- ✅ JWT Token生成已实现
-- ⏳ JWT过滤器待实现（Token验证中间件）
-
-### Token格式
+### Token格式示例
 
 ```
 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTcwOTAxMDAwMCwiZXhwIjoxNzA5NjE0ODAwfQ.xxxxx
@@ -104,11 +76,15 @@ Token包含：
 
 ---
 
-## 测试接口
+## 已实现接口
 
-### GET /hello
+### 1. 测试接口
+
+#### GET /hello
 
 测试接口，验证服务器是否正常运行。
+
+**是否需要Token**: ❌ 否（公开接口）
 
 **请求示例**:
 ```bash
@@ -122,197 +98,13 @@ curl http://localhost:7070/hello
 
 ---
 
-## TMDB电影接口
+### 2. 用户认证接口
 
-### GET /api/tmdb/popular
-
-获取热门电影列表。
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 1 | 页码 |
-
-**请求示例**:
-```bash
-curl "http://localhost:7070/api/tmdb/popular?page=1"
-```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "page": 1,
-    "results": [
-      {
-        "id": 278,
-        "title": "肖申克的救赎",
-        "poster_path": "/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-        "vote_average": 8.7,
-        "release_date": "1994-09-23"
-      }
-    ],
-    "total_pages": 500,
-    "total_results": 10000
-  }
-}
-```
-
----
-
-### GET /api/tmdb/movie/{movieId}
-
-获取电影详细信息。
-
-**路径参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| movieId | int | 是 | TMDB电影ID |
-
-**请求示例**:
-```bash
-curl "http://localhost:7070/api/tmdb/movie/278"
-```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "id": 278,
-    "title": "肖申克的救赎",
-    "original_title": "The Shawshank Redemption",
-    "overview": "电影简介...",
-    "poster_path": "/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-    "backdrop_path": "/kXfqcdQKsToO0OUXHcrrNCHDBzO.jpg",
-    "vote_average": 8.7,
-    "release_date": "1994-09-23",
-    "runtime": 142,
-    "genres": [
-      {"id": 18, "name": "剧情"},
-      {"id": 80, "name": "犯罪"}
-    ]
-  }
-}
-```
-
----
-
-### GET /api/tmdb/search
-
-搜索电影。
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| keyword | string | 是 | - | 搜索关键词 |
-| page | int | 否 | 1 | 页码 |
-
-**请求示例**:
-```bash
-curl "http://localhost:7070/api/tmdb/search?keyword=星际穿越&page=1"
-```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "page": 1,
-    "results": [
-      {
-        "id": 157336,
-        "title": "星际穿越",
-        "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-        "vote_average": 8.4
-      }
-    ]
-  }
-}
-```
-
----
-
-### GET /api/tmdb/movie/{movieId}/credits
-
-获取电影演职人员信息。
-
-**路径参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| movieId | int | 是 | TMDB电影ID |
-
-**请求示例**:
-```bash
-curl "http://localhost:7070/api/tmdb/movie/278/credits"
-```
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "cast": [
-      {
-        "name": "蒂姆·罗宾斯",
-        "character": "Andy Dufresne",
-        "profile_path": "/path.jpg"
-      }
-    ],
-    "crew": [
-      {
-        "name": "弗兰克·德拉邦特",
-        "job": "Director"
-      }
-    ]
-  }
-}
-```
-
----
-
-### GET /api/tmdb/now-playing
-
-获取正在上映的电影。
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 1 | 页码 |
-
-**请求示例**:
-```bash
-curl "http://localhost:7070/api/tmdb/now-playing?page=1"
-```
-
----
-
-### GET /api/tmdb/top-rated
-
-获取高分电影。
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 1 | 页码 |
-
-**请求示例**:
-```bash
-curl "http://localhost:7070/api/tmdb/top-rated?page=1"
-```
-
----
-
-## 用户接口
-
-### POST /api/auth/register
+#### POST /api/auth/register
 
 用户注册。
+
+**是否需要Token**: ❌ 否（公开接口）
 
 **请求头**:
 ```
@@ -322,8 +114,8 @@ Content-Type: application/json
 **请求体**:
 ```json
 {
-  "username": "test",
-  "phone": "12344445555",
+  "username": "testuser",
+  "phone": "13800138000",
   "password": "123456"
 }
 ```
@@ -332,7 +124,7 @@ Content-Type: application/json
 | 参数 | 类型 | 必填 | 说明 | 校验规则 |
 |------|------|------|------|---------|
 | username | string | 是 | 用户名 | 2-50个字符 |
-| phone | string | 是 | 手机号 | 11位，1开头 |
+| phone | string | 是 | 手机号 | 11位数字 |
 | password | string | 是 | 密码 | 6-20个字符 |
 
 **响应示例**:
@@ -342,17 +134,17 @@ Content-Type: application/json
   "message": "注册成功",
   "data": {
     "id": 1,
+    "userCode": "0001",
     "username": "testuser",
     "phone": "13800138000",
     "avatar": null,
-    "createdAt": "2026-02-27T10:30:00"
+    "bio": null,
+    "createdAt": "2026-02-28T10:30:00"
   }
 }
 ```
 
 **错误响应**:
-
-用户名已存在：
 ```json
 {
   "code": 1001,
@@ -361,29 +153,13 @@ Content-Type: application/json
 }
 ```
 
-手机号已注册：
-```json
-{
-  "code": 1002,
-  "message": "手机号已被注册",
-  "data": null
-}
-```
-
-参数校验失败：
-```json
-{
-  "code": 400,
-  "message": "参数校验失败",
-  "data": null
-}
-```
-
 ---
 
-### POST /api/auth/login
+#### POST /api/auth/login
 
 用户登录。
+
+**是否需要Token**: ❌ 否（公开接口）
 
 **请求头**:
 ```
@@ -394,15 +170,9 @@ Content-Type: application/json
 ```json
 {
   "phone": "13800138000",
-  "password": "password123"
+  "password": "123456"
 }
 ```
-
-**请求参数说明**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| phone | string | 是 | 手机号 |
-| password | string | 是 | 密码 |
 
 **响应示例**:
 ```json
@@ -410,34 +180,29 @@ Content-Type: application/json
   "code": 200,
   "message": "登录成功",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsImlhdCI6MTcwOTAxMDAwMCwiZXhwIjoxNzA5NjE0ODAwfQ.xxxxx",
+    "token": "eyJhbGciOiJIUzI1NiJ9...",
     "user": {
       "id": 1,
+      "userCode": "0001",
       "username": "testuser",
       "phone": "13800138000",
       "avatar": null,
-      "createdAt": "2026-02-27T10:30:00"
+      "bio": null,
+      "createdAt": "2026-02-28T10:30:00"
     }
   }
 }
 ```
 
-**错误响应**:
-
-手机号或密码错误：
-```json
-{
-  "code": 1003,
-  "message": "手机号或密码错误",
-  "data": null
-}
-```
-
 ---
 
-### GET /api/user/profile（待开发）
+### 3. 用户信息接口
+
+#### GET /api/users/profile
 
 获取当前用户信息。
+
+**是否需要Token**: ✅ 是
 
 **请求头**:
 ```
@@ -448,29 +213,117 @@ Authorization: Bearer {token}
 ```json
 {
   "code": 200,
-  "message": "success",
+  "message": "获取成功",
   "data": {
     "id": 1,
+    "userCode": "0001",
     "username": "testuser",
     "phone": "13800138000",
-    "avatar": "http://example.com/avatar.jpg",
-    "createdAt": "2026-02-26T10:00:00"
+    "avatar": "https://example.com/avatar.jpg",
+    "bio": "这是我的个人简介",
+    "createdAt": "2026-02-28T10:00:00"
   }
 }
 ```
 
 ---
 
-## 动态接口（待开发）
+#### PUT /api/users/profile
 
-### GET /api/feeds
+更新个人资料。
 
-获取动态列表。
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "username": "newusername",
+  "avatar": "https://example.com/new-avatar.jpg",
+  "bio": "这是我的新个人简介"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 | 校验规则 |
+|------|------|------|------|---------|
+| username | string | 否 | 用户名 | 2-50个字符 |
+| avatar | string | 否 | 头像URL | 最多500字符 |
+| bio | string | 否 | 个人简介 | 最多500字符 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "更新成功",
+  "data": {
+    "id": 1,
+    "userCode": "0001",
+    "username": "newusername",
+    "phone": "13800138000",
+    "avatar": "https://example.com/new-avatar.jpg",
+    "bio": "这是我的新个人简介",
+    "createdAt": "2026-02-28T10:00:00"
+  }
+}
+```
+
+---
+
+#### GET /api/users/{userId}
+
+获取指定用户信息。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| userId | long | 是 | 用户ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "id": 1,
+    "userCode": "0001",
+    "username": "testuser",
+    "phone": "13800138000",
+    "avatar": "https://example.com/avatar.jpg",
+    "bio": "这是我的个人简介",
+    "createdAt": "2026-02-28T10:00:00"
+  }
+}
+```
+
+---
+
+## 待实现接口
+
+### 1. 动态接口
+
+#### GET /api/feeds
+
+获取动态列表（分页）。
+
+**是否需要Token**: ✅ 是
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| page | int | 否 | 1 | 页码 |
+| page | int | 否 | 0 | 页码 |
 | size | int | 否 | 20 | 每页数量 |
 
 **响应示例**:
@@ -484,101 +337,95 @@ Authorization: Bearer {token}
         "id": 1,
         "user": {
           "id": 1,
+          "userCode": "0001",
           "username": "电影爱好者",
-          "avatar": "http://example.com/avatar.jpg"
+          "avatar": "https://example.com/avatar.jpg"
         },
         "movie": {
           "id": 1,
           "title": "星际穿越",
-          "posterUrl": "http://example.com/poster.jpg"
+          "posterUrl": "https://example.com/poster.jpg"
         },
+        "event": null,
         "content": "刚看完这部科幻大片，视觉效果太震撼了！",
+        "images": ["https://example.com/img1.jpg"],
         "rating": 9.3,
         "likeCount": 234,
         "shareCount": 23,
         "commentCount": 45,
-        "createdAt": "2026-02-26T10:00:00"
+        "createdAt": "2026-02-28T10:00:00"
       }
     ],
     "totalElements": 100,
-    "totalPages": 5
+    "totalPages": 5,
+    "size": 20,
+    "number": 0
   }
 }
 ```
 
 ---
 
-### POST /api/feeds
+#### POST /api/feeds
 
 发布动态。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+**是否需要Token**: ✅ 是
 
 **请求体**:
 ```json
 {
   "movieId": 1,
+  "eventId": null,
   "content": "这部电影太棒了！",
+  "images": ["https://example.com/img1.jpg"],
   "rating": 9.5
 }
 ```
 
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "发布成功",
-  "data": {
-    "id": 1,
-    "content": "这部电影太棒了！",
-    "rating": 9.5,
-    "createdAt": "2026-02-26T10:00:00"
-  }
-}
-```
+**说明**：movieId和eventId至少填一个，也可以都不填（纯文字动态）
 
 ---
 
-### GET /api/feeds/{feedId}
+#### GET /api/feeds/{feedId}
 
 获取动态详情。
 
-**路径参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| feedId | long | 是 | 动态ID |
+**是否需要Token**: ✅ 是
 
 ---
 
-### DELETE /api/feeds/{feedId}
+#### PUT /api/feeds/{feedId}
 
-删除动态。
+更新动态。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
-
-**路径参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| feedId | long | 是 | 动态ID |
+**是否需要Token**: ✅ 是
 
 ---
 
-## 评论接口（待开发）
+#### DELETE /api/feeds/{feedId}
 
-### GET /api/feeds/{feedId}/comments
+删除动态（只能删除自己的）。
+
+**是否需要Token**: ✅ 是
+
+---
+
+#### GET /api/users/{userId}/feeds
+
+获取指定用户的动态列表。
+
+**是否需要Token**: ✅ 是
+
+---
+
+### 2. 评论接口
+
+#### GET /api/feeds/{feedId}/comments
 
 获取动态的评论列表。
 
-**路径参数**:
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| feedId | long | 是 | 动态ID |
+**是否需要Token**: ✅ 是
 
 **响应示例**:
 ```json
@@ -590,12 +437,13 @@ Authorization: Bearer {token}
       "id": 1,
       "user": {
         "id": 2,
+        "userCode": "0002",
         "username": "影迷小李",
-        "avatar": "http://example.com/avatar.jpg"
+        "avatar": "https://example.com/avatar.jpg"
       },
       "content": "我也超级喜欢这部电影！",
       "likeCount": 23,
-      "createdAt": "2026-02-26T11:00:00"
+      "createdAt": "2026-02-28T11:00:00"
     }
   ]
 }
@@ -603,14 +451,11 @@ Authorization: Bearer {token}
 
 ---
 
-### POST /api/feeds/{feedId}/comments
+#### POST /api/feeds/{feedId}/comments
 
 发表评论。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+**是否需要Token**: ✅ 是
 
 **请求体**:
 ```json
@@ -621,27 +466,21 @@ Authorization: Bearer {token}
 
 ---
 
-### DELETE /api/comments/{commentId}
+#### DELETE /api/comments/{commentId}
 
-删除评论。
+删除评论（只能删除自己的）。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+**是否需要Token**: ✅ 是
 
 ---
 
-## 点赞接口（待开发）
+### 3. 点赞接口
 
-### POST /api/feeds/{feedId}/like
+#### POST /api/feeds/{feedId}/like
 
 点赞动态。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+**是否需要Token**: ✅ 是
 
 **响应示例**:
 ```json
@@ -657,68 +496,42 @@ Authorization: Bearer {token}
 
 ---
 
-### DELETE /api/feeds/{feedId}/like
+#### DELETE /api/feeds/{feedId}/like
 
 取消点赞。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+**是否需要Token**: ✅ 是
 
 ---
 
-## 收藏接口（待开发）
+#### POST /api/comments/{commentId}/like
 
-### GET /api/favorites
+点赞评论。
 
-获取我的收藏列表。
+**是否需要Token**: ✅ 是
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+---
+
+#### DELETE /api/comments/{commentId}/like
+
+取消点赞评论。
+
+**是否需要Token**: ✅ 是
+
+---
+
+### 4. 收藏接口
+
+#### GET /api/favorites
+
+获取我的收藏列表（分页）。
+
+**是否需要Token**: ✅ 是
 
 **请求参数**:
 | 参数 | 类型 | 必填 | 默认值 | 说明 |
 |------|------|------|--------|------|
-| page | int | 否 | 1 | 页码 |
-| size | int | 否 | 20 | 每页数量 |
-
----
-
-### POST /api/movies/{movieId}/favorite
-
-收藏电影。
-
-**请求头**:
-```
-Authorization: Bearer {token}
-```
-
----
-
-### DELETE /api/movies/{movieId}/favorite
-
-取消收藏。
-
-**请求头**:
-```
-Authorization: Bearer {token}
-```
-
----
-
-## 活动接口（待开发）
-
-### GET /api/events
-
-获取活动列表。
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 1 | 页码 |
+| page | int | 否 | 0 | 页码 |
 | size | int | 否 | 20 | 每页数量 |
 
 **响应示例**:
@@ -730,46 +543,207 @@ Authorization: Bearer {token}
     "content": [
       {
         "id": 1,
-        "title": "《星际穿越》IMAX重映观影团",
-        "imageUrl": "http://example.com/event.jpg",
-        "eventDate": "2026-03-15T19:30:00",
-        "location": "北京国际影城IMAX厅",
-        "participants": 58,
-        "maxParticipants": 80,
-        "type": "观影团"
+        "movie": {
+          "id": 1,
+          "title": "星际穿越",
+          "posterUrl": "https://example.com/poster.jpg",
+          "rating": 9.3
+        },
+        "createdAt": "2026-02-28T10:00:00"
       }
-    ]
+    ],
+    "totalElements": 50,
+    "totalPages": 3
   }
 }
 ```
 
 ---
 
-### GET /api/events/{eventId}
+#### POST /api/movies/{movieId}/favorite
+
+收藏电影。
+
+**是否需要Token**: ✅ 是
+
+---
+
+#### DELETE /api/movies/{movieId}/favorite
+
+取消收藏。
+
+**是否需要Token**: ✅ 是
+
+---
+
+#### GET /api/movies/{movieId}/favorite/status
+
+检查是否已收藏。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "favorited": true
+  }
+}
+```
+
+---
+
+### 5. 活动接口
+
+#### GET /api/events
+
+获取活动列表（分页）。
+
+**是否需要Token**: ✅ 是
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+| type | string | 否 | - | 活动类型（观影团/影评征集/线下活动） |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "title": "《星际穿越》IMAX重映观影团",
+        "description": "一起去看IMAX版星际穿越！",
+        "imageUrl": "https://example.com/event.jpg",
+        "eventDate": "2026-03-15T19:30:00",
+        "location": "北京国际影城IMAX厅",
+        "participants": 58,
+        "maxParticipants": 80,
+        "type": "观影团",
+        "createdAt": "2026-02-28T10:00:00"
+      }
+    ],
+    "totalElements": 20,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+#### GET /api/events/{eventId}
 
 获取活动详情。
 
+**是否需要Token**: ✅ 是
+
 ---
 
-### POST /api/events/{eventId}/join
+#### POST /api/events
+
+创建活动。
+
+**是否需要Token**: ✅ 是
+
+**请求体**:
+```json
+{
+  "title": "《星际穿越》IMAX重映观影团",
+  "description": "一起去看IMAX版星际穿越！",
+  "imageUrl": "https://example.com/event.jpg",
+  "eventDate": "2026-03-15T19:30:00",
+  "location": "北京国际影城IMAX厅",
+  "maxParticipants": 80,
+  "type": "观影团"
+}
+```
+
+---
+
+#### PUT /api/events/{eventId}
+
+更新活动（只能更新自己创建的）。
+
+**是否需要Token**: ✅ 是
+
+---
+
+#### DELETE /api/events/{eventId}
+
+删除活动（只能删除自己创建的）。
+
+**是否需要Token**: ✅ 是
+
+---
+
+#### POST /api/events/{eventId}/join
 
 参加活动。
 
-**请求头**:
-```
-Authorization: Bearer {token}
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "参加成功",
+  "data": {
+    "joined": true,
+    "participants": 59
+  }
+}
 ```
 
 ---
 
-### DELETE /api/events/{eventId}/join
+#### DELETE /api/events/{eventId}/join
 
 取消参加。
 
-**请求头**:
-```
-Authorization: Bearer {token}
-```
+**是否需要Token**: ✅ 是
+
+---
+
+#### GET /api/events/{eventId}/participants
+
+获取活动参与者列表。
+
+**是否需要Token**: ✅ 是
+
+---
+
+### 6. 电影接口
+
+#### GET /api/movies
+
+获取本地电影列表（分页）。
+
+**是否需要Token**: ✅ 是
+
+**说明**：返回数据库中已保存的电影（用户发布过动态的电影）
+
+---
+
+#### GET /api/movies/{movieId}
+
+获取本地电影详情。
+
+**是否需要Token**: ✅ 是
+
+---
+
+#### GET /api/movies/{movieId}/feeds
+
+获取某电影的所有动态。
+
+**是否需要Token**: ✅ 是
 
 ---
 
@@ -785,17 +759,58 @@ Authorization: Bearer {token}
 | 500 | 服务器内部错误 | 所有接口 |
 | 1001 | 用户名已存在 | 注册接口 |
 | 1002 | 手机号已存在 | 注册接口 |
-| 1003 | 用户名或密码错误 | 登录接口 |
+| 1003 | 手机号或密码错误 | 登录接口 |
 | 1004 | Token无效或已过期 | 需要认证的接口 |
 | 2001 | 动态不存在 | 动态相关接口 |
-| 2002 | 无权限操作 | 动态相关接口 |
+| 2002 | 无权限操作此动态 | 动态相关接口 |
+| 2003 | 已经点赞过了 | 点赞接口 |
+| 2004 | 还未点赞 | 取消点赞接口 |
 | 3001 | 电影不存在 | 电影相关接口 |
+| 3002 | 已经收藏过了 | 收藏接口 |
+| 3003 | 还未收藏 | 取消收藏接口 |
 | 4001 | 活动不存在 | 活动相关接口 |
-| 4002 | 活动已满员 | 活动相关接口 |
+| 4002 | 活动已满员 | 参加活动接口 |
+| 4003 | 已经参加过了 | 参加活动接口 |
+| 4004 | 还未参加 | 取消参加接口 |
+| 4005 | 无权限操作此活动 | 活动相关接口 |
+| 5001 | 评论不存在 | 评论相关接口 |
+| 5002 | 无权限操作此评论 | 评论相关接口 |
+
+---
+
+## 接口实现优先级
+
+### 高优先级（核心功能）⭐⭐⭐
+1. ✅ 用户注册/登录
+2. ✅ 获取/更新个人资料
+3. ⏳ 发布动态
+4. ⏳ 获取动态列表
+5. ⏳ 点赞动态
+6. ⏳ 评论动态
+7. ⏳ 收藏电影
+
+### 中优先级（重要功能）⭐⭐
+8. ⏳ 获取动态详情
+9. ⏳ 删除动态
+10. ⏳ 删除评论
+11. ⏳ 获取用户动态列表
+12. ⏳ 获取收藏列表
+
+### 低优先级（辅助功能）⭐
+13. ⏳ 活动相关接口
+14. ⏳ 点赞评论
+15. ⏳ 获取电影动态列表
 
 ---
 
 ## 更新日志
+
+### 2026-02-28
+- ✅ 实现用户个人资料接口（获取、更新）
+- ✅ 添加用户唯一标识（userCode）
+- ✅ 添加个人简介字段（bio）
+- ✅ 更新SecurityConfig（除hello和auth外都需要Token）
+- 📝 完整整理所有接口文档（已实现+待实现）
 
 ### 2026-02-27
 - ✅ 实现用户注册接口
@@ -803,13 +818,8 @@ Authorization: Bearer {token}
 - ✅ 添加JWT Token认证
 - ✅ 添加参数校验
 - ✅ 添加全局异常处理
-- 📝 更新API文档
-
-### 2026-02-26
-- ✅ 创建API文档
-- ✅ 实现TMDB接口
 
 ---
 
-**文档维护**: 本文档将随接口开发自动更新
+**文档维护**: 本文档记录所有接口（已实现和待实现），随开发进度持续更新
 
