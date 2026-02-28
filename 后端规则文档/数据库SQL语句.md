@@ -497,12 +497,79 @@ AFTER avatar;
 
 ---
 
+---
+
+## 关注关系表（follows）
+
+### 创建表
+
+```sql
+-- 创建关注关系表
+CREATE TABLE IF NOT EXISTS follows (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '关注关系ID',
+    follower_id BIGINT NOT NULL COMMENT '关注者ID（谁关注）',
+    following_id BIGINT NOT NULL COMMENT '被关注者ID（关注谁）',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+    UNIQUE KEY uk_follower_following (follower_id, following_id) COMMENT '防止重复关注',
+    INDEX idx_follower (follower_id) COMMENT '查询我关注的人',
+    INDEX idx_following (following_id) COMMENT '查询关注我的人',
+    CONSTRAINT fk_follows_follower FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_follows_following FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户关注关系表';
+```
+
+**执行时间**: 2026-02-28  
+**说明**: 存储用户之间的关注关系，支持关注、粉丝、好友功能
+
+### 常用查询
+
+```sql
+-- 查询用户1关注的所有人
+SELECT u.* 
+FROM users u
+INNER JOIN follows f ON u.id = f.following_id
+WHERE f.follower_id = 1
+ORDER BY f.created_at DESC;
+
+-- 查询关注用户1的所有人（粉丝）
+SELECT u.* 
+FROM users u
+INNER JOIN follows f ON u.id = f.follower_id
+WHERE f.following_id = 1
+ORDER BY f.created_at DESC;
+
+-- 查询用户1的好友（互相关注）
+SELECT u.* 
+FROM users u
+INNER JOIN follows f1 ON u.id = f1.following_id AND f1.follower_id = 1
+INNER JOIN follows f2 ON u.id = f2.follower_id AND f2.following_id = 1;
+
+-- 统计用户1的关注数
+SELECT COUNT(*) AS following_count FROM follows WHERE follower_id = 1;
+
+-- 统计用户1的粉丝数
+SELECT COUNT(*) AS follower_count FROM follows WHERE following_id = 1;
+
+-- 统计用户1的好友数
+SELECT COUNT(*) AS friend_count
+FROM follows f1
+WHERE f1.follower_id = 1
+AND EXISTS (
+    SELECT 1 FROM follows f2 
+    WHERE f2.follower_id = f1.following_id 
+    AND f2.following_id = 1
+);
+```
+
+---
+
 ## 更新日志
 
 ### 2026-02-28
 - ✅ 添加user_code字段（用户唯一标识）
 - ✅ 添加user_code唯一约束和索引
 - ✅ 添加bio字段（个人简介）
+- ✅ 创建关注关系表 `follows`
 - ✅ 提供现有数据迁移方案
 
 ### 2026-02-27

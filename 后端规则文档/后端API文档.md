@@ -310,6 +310,184 @@ Authorization: Bearer {token}
 
 ---
 
+### 4. 关注/粉丝/好友接口
+
+#### POST /api/users/{userId}/follow
+
+关注用户。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| userId | long | 是 | 要关注的用户ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "关注成功",
+  "data": null
+}
+```
+
+**错误响应**:
+```json
+{
+  "code": 6001,
+  "message": "不能关注自己",
+  "data": null
+}
+```
+
+---
+
+#### DELETE /api/users/{userId}/follow
+
+取消关注。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "取消关注成功",
+  "data": null
+}
+```
+
+---
+
+#### GET /api/users/{userId}/following
+
+获取关注列表（我关注的人）。
+
+**是否需要Token**: ✅ 是
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "content": [
+      {
+        "id": 2,
+        "userCode": "0002",
+        "username": "用户B",
+        "avatar": "https://example.com/avatar.jpg",
+        "bio": "这是用户B的简介",
+        "createdAt": "2026-02-28T10:00:00"
+      }
+    ],
+    "totalElements": 50,
+    "totalPages": 3,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### GET /api/users/{userId}/followers
+
+获取粉丝列表（关注我的人）。
+
+**是否需要Token**: ✅ 是
+
+**请求参数**: 同关注列表
+
+**响应示例**: 同关注列表
+
+---
+
+#### GET /api/users/{userId}/friends
+
+获取好友列表（互相关注）。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "id": 2,
+      "userCode": "0002",
+      "username": "用户B",
+      "avatar": "https://example.com/avatar.jpg",
+      "bio": "这是用户B的简介",
+      "createdAt": "2026-02-28T10:00:00"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/users/{userId}/follow/status
+
+获取关注状态。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "isFollowing": true,
+    "isFollower": true,
+    "isFriend": true
+  }
+}
+```
+
+**字段说明**:
+- `isFollowing`: 我是否关注了对方
+- `isFollower`: 对方是否关注了我
+- `isFriend`: 是否为好友（互相关注）
+
+---
+
+#### GET /api/users/{userId}/stats
+
+获取用户统计信息。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "followingCount": 123,
+    "followerCount": 456,
+    "friendCount": 89
+  }
+}
+```
+
+---
+
 ## 待实现接口
 
 ### 1. 动态接口
@@ -775,6 +953,9 @@ Authorization: Bearer {token}
 | 4005 | 无权限操作此活动 | 活动相关接口 |
 | 5001 | 评论不存在 | 评论相关接口 |
 | 5002 | 无权限操作此评论 | 评论相关接口 |
+| 6001 | 不能关注自己 | 关注接口 |
+| 6002 | 已经关注过了 | 关注接口 |
+| 6003 | 还未关注 | 取消关注接口 |
 
 ---
 
@@ -783,23 +964,25 @@ Authorization: Bearer {token}
 ### 高优先级（核心功能）⭐⭐⭐
 1. ✅ 用户注册/登录
 2. ✅ 获取/更新个人资料
-3. ⏳ 发布动态
-4. ⏳ 获取动态列表
-5. ⏳ 点赞动态
-6. ⏳ 评论动态
-7. ⏳ 收藏电影
+3. ✅ 关注/取消关注用户
+4. ✅ 获取关注/粉丝/好友列表
+5. ⏳ 发布动态
+6. ⏳ 获取动态列表
+7. ⏳ 点赞动态
+8. ⏳ 评论动态
+9. ⏳ 收藏电影
 
 ### 中优先级（重要功能）⭐⭐
-8. ⏳ 获取动态详情
-9. ⏳ 删除动态
-10. ⏳ 删除评论
-11. ⏳ 获取用户动态列表
-12. ⏳ 获取收藏列表
+10. ⏳ 获取动态详情
+11. ⏳ 删除动态
+12. ⏳ 删除评论
+13. ⏳ 获取用户动态列表
+14. ⏳ 获取收藏列表
 
 ### 低优先级（辅助功能）⭐
-13. ⏳ 活动相关接口
-14. ⏳ 点赞评论
-15. ⏳ 获取电影动态列表
+15. ⏳ 活动相关接口
+16. ⏳ 点赞评论
+17. ⏳ 获取电影动态列表
 
 ---
 
@@ -807,8 +990,10 @@ Authorization: Bearer {token}
 
 ### 2026-02-28
 - ✅ 实现用户个人资料接口（获取、更新）
+- ✅ 实现关注/粉丝/好友系统（7个接口）
 - ✅ 添加用户唯一标识（userCode）
 - ✅ 添加个人简介字段（bio）
+- ✅ 创建关注关系表（follows）
 - ✅ 更新SecurityConfig（除hello和auth外都需要Token）
 - 📝 完整整理所有接口文档（已实现+待实现）
 
