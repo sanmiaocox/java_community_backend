@@ -26,6 +26,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final UserCodeGeneratorService userCodeGeneratorService;
     
     /**
      * 用户注册
@@ -42,15 +43,20 @@ public class AuthService {
             throw new BusinessException(1002, "手机号已被注册");
         }
         
+        // 生成用户唯一编码
+        String userCode = userCodeGeneratorService.generateNextUserCode();
+        
         // 创建用户
         User user = new User();
+        user.setUserCode(userCode);
         user.setUsername(request.getUsername());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
         // 保存用户
         User savedUser = userRepository.save(user);
-        log.info("用户注册成功: userId={}, username={}", savedUser.getId(), savedUser.getUsername());
+        log.info("用户注册成功: userId={}, userCode={}, username={}", 
+            savedUser.getId(), savedUser.getUserCode(), savedUser.getUsername());
         
         return UserInfoResponse.fromEntity(savedUser);
     }

@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 public class UserInfoResponse {
     
     private Long id;
+    private String userCode;
     private String username;
     private String phone;
     private String avatar;
@@ -27,6 +28,7 @@ public class UserInfoResponse {
     public static UserInfoResponse fromEntity(User user) {
         UserInfoResponse response = new UserInfoResponse();
         response.setId(user.getId());
+        response.setUserCode(user.getUserCode());
         response.setUsername(user.getUsername());
         response.setPhone(user.getPhone());
         response.setAvatar(user.getAvatar());

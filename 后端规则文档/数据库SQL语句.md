@@ -420,3 +420,90 @@ mysql -u root -p final < final_backup_20260227.sql
 
 **文档维护**: 本文档记录所有数据库操作SQL语句，每次数据库变更都会更新
 
+# 数据库SQL语句记录
+
+> **数据库名称**: final  
+> **数据库类型**: MySQL 8.0+  
+> **字符集**: utf8mb4  
+> **排序规则**: utf8mb4_0900_ai_ci  
+> **最后更新**: 2026-02-28
+
+---
+
+## 数据库创建
+
+```sql
+-- 创建数据库（如果已存在则跳过）
+CREATE DATABASE IF NOT EXISTS final 
+CHARACTER SET utf8mb4 
+COLLATE utf8mb4_0900_ai_ci;
+
+-- 使用数据库
+USE final;
+```
+
+---
+
+## 用户表（users）
+
+### 创建表
+
+```sql
+-- 创建用户表
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '用户ID',
+    user_code VARCHAR(4) NOT NULL UNIQUE COMMENT '用户唯一标识（0001-9999）',
+    username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
+    phone VARCHAR(11) NOT NULL UNIQUE COMMENT '手机号',
+    password VARCHAR(255) NOT NULL COMMENT '密码（加密）',
+    avatar VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_user_code (user_code),
+    INDEX idx_username (username),
+    INDEX idx_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户表';
+```
+
+### 如果表已存在，添加user_code字段
+
+```sql
+-- 步骤1：添加字段（允许NULL）
+ALTER TABLE users ADD COLUMN user_code VARCHAR(4) DEFAULT NULL COMMENT '用户唯一标识' AFTER id;
+
+-- 步骤2：为现有用户生成编码（按注册时间顺序）
+SET @row_number = 0;
+UPDATE users 
+SET user_code = LPAD((@row_number := @row_number + 1), 4, '0')
+ORDER BY created_at ASC;
+
+-- 步骤3：设置为NOT NULL并添加唯一约束
+ALTER TABLE users MODIFY COLUMN user_code VARCHAR(4) NOT NULL;
+ALTER TABLE users ADD UNIQUE KEY uk_user_code (user_code);
+CREATE INDEX idx_user_code ON users(user_code);
+```
+
+---
+
+## 更新日志
+
+### 2026-02-28
+- ✅ 添加user_code字段（用户唯一标识）
+- ✅ 添加user_code唯一约束和索引
+- ✅ 提供现有数据迁移方案
+
+### 2026-02-27
+- ✅ 创建数据库 `final`
+- ✅ 创建用户表 `users`
+- ✅ 创建电影表 `movies`
+- ✅ 创建动态表 `feeds`
+- ✅ 创建评论表 `comments`
+- ✅ 创建点赞表 `likes`
+- ✅ 创建收藏表 `favorites`
+- ✅ 创建活动表 `events`
+- ✅ 创建活动参与表 `event_participants`
+
+---
+
+**文档维护**: 本文档记录所有数据库操作SQL语句
+
