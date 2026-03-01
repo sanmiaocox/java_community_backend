@@ -59,6 +59,13 @@ public class JwtUtil {
     }
     
     /**
+     * 从Token中提取用户ID（兼容方法）
+     */
+    public Long extractUserId(String token) {
+        return getUserIdFromToken(token);
+    }
+    
+    /**
      * 从Token中获取用户名
      */
     public String getUsernameFromToken(String token) {

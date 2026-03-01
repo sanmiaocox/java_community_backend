@@ -199,26 +199,161 @@ CREATE TABLE IF NOT EXISTS likes (
 
 ---
 
-## 收藏表（favorites）
+## 收藏夹表（collections）
 
 ### 创建表
 
 ```sql
--- 创建收藏表
-CREATE TABLE IF NOT EXISTS favorites (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '收藏ID',
+-- 创建收藏夹表
+CREATE TABLE IF NOT EXISTS collections (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '收藏夹ID',
     user_id BIGINT NOT NULL COMMENT '用户ID',
-    movie_id BIGINT NOT NULL COMMENT '电影ID',
+    name VARCHAR(100) NOT NULL COMMENT '收藏夹名称',
+    description TEXT COMMENT '收藏夹描述',
+    type ENUM('MOVIE', 'EVENT') NOT NULL DEFAULT 'MOVIE' COMMENT '类型:电影收藏夹/活动收藏夹',
+    is_system BOOLEAN DEFAULT FALSE COMMENT '是否系统收藏夹',
+    is_public BOOLEAN DEFAULT TRUE COMMENT '是否公开',
+    cover_image VARCHAR(500) COMMENT '封面图片',
+    item_count INT DEFAULT 0 COMMENT '收藏项数量',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY uk_user_movie (user_id, movie_id) COMMENT '用户-电影唯一索引',
-    INDEX idx_movie_id (movie_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='收藏表';
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_type (type),
+    CONSTRAINT fk_collections_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='收藏夹表';
 ```
 
-**执行时间**: 2026-02-27  
-**说明**: 存储用户收藏的电影，防止重复收藏
+**执行时间**: 2026-03-01  
+**说明**: 存储用户创建的收藏夹，支持两种类型：MOVIE(电影收藏夹)、EVENT(活动收藏夹)。看过功能使用独立的 watched_movies 表
+
+---
+
+## 收藏项表（favorites）
+
+### 创建表（全新安装）
+
+```sql
+-- 创建收藏项表（全新安装使用）
+CREATE TABLE IF NOT EXISTS favorites (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '收藏项ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    collection_id BIGINT NOT NULL COMMENT '收藏夹ID',
+    item_type ENUM('MOVIE', 'EVENT') NOT NULL DEFAULT 'MOVIE' COMMENT '收藏项类型',
+    item_id BIGINT NOT NULL COMMENT '收藏项ID（电影ID或活动ID）',
+    movie_id BIGINT DEFAULT NULL COMMENT '电影ID（已废弃，兼容旧数据）',
+    note TEXT COMMENT '用户备注',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_collection_item (collection_id, item_type, item_id) COMMENT '防止重复收藏',
+    INDEX idx_user_id (user_id),
+    INDEX idx_collection_id (collection_id),
+    INDEX idx_item (item_type, item_id),
+    CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_favorites_collection FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='收藏项表';
+```
+
+**执行时间**: 2026-03-01  
+**说明**: 存储收藏夹中的具体内容（电影或活动），支持用户备注
+
+### 改造现有表（已有数据迁移）
+
+```sql
+-- ========== 步骤1: 先创建collections表 ==========
+-- （使用上面的collections表创建语句）
+
+-- ========== 步骤2: 改造favorites表 ==========
+
+-- 步骤2.1: 添加新字段
+ALTER TABLE favorites 
+ADD COLUMN collection_id BIGINT DEFAULT NULL COMMENT '收藏夹ID' AFTER user_id,
+ADD COLUMN item_type ENUM('MOVIE', 'EVENT') NOT NULL DEFAULT 'MOVIE' COMMENT '收藏项类型' AFTER collection_id,
+ADD COLUMN item_id BIGINT NOT NULL DEFAULT 0 COMMENT '收藏项ID' AFTER item_type,
+ADD COLUMN note TEXT COMMENT '用户备注' AFTER item_id;
+
+-- 步骤2.2: 为每个用户创建默认收藏夹
+INSERT INTO collections (user_id, name, type, is_system, is_public)
+SELECT DISTINCT user_id, '默认电影收藏夹', 'MOVIE', TRUE, TRUE
+FROM favorites;
+
+INSERT INTO collections (user_id, name, type, is_system, is_public)
+SELECT DISTINCT user_id, '默认活动收藏夹', 'EVENT', TRUE, TRUE
+FROM users
+WHERE id IN (SELECT DISTINCT user_id FROM favorites);
+
+-- 步骤2.3: 将现有收藏数据迁移到默认电影收藏夹
+UPDATE favorites f
+INNER JOIN collections c ON f.user_id = c.user_id AND c.name = '默认电影收藏夹'
+SET f.collection_id = c.id,
+    f.item_id = f.movie_id,
+    f.item_type = 'MOVIE';
+
+-- 步骤2.4: 更新收藏夹的item_count
+UPDATE collections c
+SET c.item_count = (
+    SELECT COUNT(*) FROM favorites f WHERE f.collection_id = c.id
+);
+
+-- 步骤2.5: 添加外键约束
+ALTER TABLE favorites
+ADD CONSTRAINT fk_favorites_collection FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE;
+
+-- 步骤2.6: 删除旧的唯一约束，添加新的唯一约束
+ALTER TABLE favorites DROP INDEX uk_user_movie;
+ALTER TABLE favorites ADD UNIQUE KEY uk_collection_item (collection_id, item_type, item_id);
+
+-- 步骤2.7: 添加新索引
+CREATE INDEX idx_collection_id ON favorites(collection_id);
+CREATE INDEX idx_item ON favorites(item_type, item_id);
+
+-- 步骤2.8: movie_id字段改为可空（因为现在用item_id）
+ALTER TABLE favorites MODIFY COLUMN movie_id BIGINT DEFAULT NULL COMMENT '电影ID（已废弃，使用item_id）';
+
+-- 步骤2.9: 为所有现有用户创建默认收藏夹（如果还没有）
+INSERT INTO collections (user_id, name, type, is_system, is_public)
+SELECT id, '默认电影收藏夹', 'MOVIE', TRUE, TRUE
+FROM users
+WHERE NOT EXISTS (
+    SELECT 1 FROM collections c 
+    WHERE c.user_id = users.id AND c.type = 'MOVIE' AND c.is_system = TRUE
+);
+
+INSERT INTO collections (user_id, name, type, is_system, is_public)
+SELECT id, '默认活动收藏夹', 'EVENT', TRUE, TRUE
+FROM users
+WHERE NOT EXISTS (
+    SELECT 1 FROM collections c 
+    WHERE c.user_id = users.id AND c.type = 'EVENT' AND c.is_system = TRUE
+);
+```
+
+---
+
+## 看过记录表（watched_movies）
+
+### 创建表
+
+```sql
+-- 创建看过记录表
+CREATE TABLE IF NOT EXISTS watched_movies (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '看过记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    movie_id BIGINT NOT NULL COMMENT '电影ID',
+    watched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '标记看过时间',
+    rating DECIMAL(2,1) DEFAULT NULL COMMENT '用户评分(0.0-10.0)',
+    note TEXT COMMENT '观影笔记',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_user_movie (user_id, movie_id) COMMENT '防止重复标记',
+    INDEX idx_user_id (user_id),
+    INDEX idx_movie_id (movie_id),
+    INDEX idx_watched_at (watched_at),
+    CONSTRAINT fk_watched_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_watched_movie FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='看过记录表';
+```
+
+**执行时间**: 2026-03-01  
+**说明**: 独立存储用户看过的电影记录，支持评分和观影笔记，查询性能更优
 
 ---
 
@@ -348,7 +483,10 @@ GROUP BY user_id;
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE event_participants;
 TRUNCATE TABLE events;
+TRUNCATE TABLE watched_movies;
 TRUNCATE TABLE favorites;
+TRUNCATE TABLE collections;
+TRUNCATE TABLE follows;
 TRUNCATE TABLE likes;
 TRUNCATE TABLE comments;
 TRUNCATE TABLE feeds;
@@ -380,9 +518,12 @@ DESC movies;
 DESC feeds;
 DESC comments;
 DESC likes;
+DESC collections;
 DESC favorites;
+DESC watched_movies;
 DESC events;
 DESC event_participants;
+DESC follows;
 ```
 
 ### 备份数据库
@@ -564,6 +705,12 @@ AND EXISTS (
 ---
 
 ## 更新日志
+
+### 2026-03-01
+- ✅ 创建收藏夹表 `collections`（支持片单、混合收藏夹、看过系统收藏夹）
+- ✅ 改造收藏项表 `favorites`（支持电影和活动收藏，关联收藏夹）
+- ✅ 创建看过记录表 `watched_movies`（独立存储看过记录，支持评分和笔记）
+- ✅ 提供现有数据平滑迁移方案
 
 ### 2026-02-28
 - ✅ 添加user_code字段（用户唯一标识）

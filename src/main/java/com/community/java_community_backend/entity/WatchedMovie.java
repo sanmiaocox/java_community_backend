@@ -1,32 +1,32 @@
 package com.community.java_community_backend.entity;
 
-import com.community.java_community_backend.enums.ItemType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 /**
- * 收藏项实体类（收藏夹中的具体内容）
+ * 看过记录实体类
  */
 @Entity
-@Table(name = "favorites",
-    uniqueConstraints = @UniqueConstraint(name = "uk_collection_item", columnNames = {"collection_id", "item_type", "item_id"}),
+@Table(name = "watched_movies", 
+    uniqueConstraints = @UniqueConstraint(name = "uk_user_movie", columnNames = {"user_id", "movie_id"}),
     indexes = {
         @Index(name = "idx_user_id", columnList = "user_id"),
-        @Index(name = "idx_collection_id", columnList = "collection_id"),
-        @Index(name = "idx_item", columnList = "item_type, item_id")
+        @Index(name = "idx_movie_id", columnList = "movie_id"),
+        @Index(name = "idx_watched_at", columnList = "watched_at")
     }
 )
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class Favorite {
+public class WatchedMovie {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,19 +37,14 @@ public class Favorite {
     private User user;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "collection_id", nullable = false)
-    private Collection collection;
+    @JoinColumn(name = "movie_id", nullable = false)
+    private Movie movie;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "item_type", nullable = false, length = 20)
-    private ItemType itemType = ItemType.MOVIE;
+    @Column(nullable = false)
+    private LocalDateTime watchedAt = LocalDateTime.now();
     
-    @Column(name = "item_id", nullable = false)
-    private Long itemId;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id")
-    private Movie movie; // 已废弃，保留用于兼容旧数据
+    @Column
+    private Double rating;
     
     @Column(columnDefinition = "TEXT")
     private String note;
@@ -57,5 +52,8 @@ public class Favorite {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+    
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
 }
 

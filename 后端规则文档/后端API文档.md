@@ -488,6 +488,606 @@ Authorization: Bearer {token}
 
 ---
 
+### 5. 收藏夹管理接口
+
+#### POST /api/collections
+
+创建收藏夹。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "name": "我的科幻片单",
+  "description": "收藏的科幻电影",
+  "type": "MOVIE",
+  "isPublic": true,
+  "coverImage": "https://example.com/cover.jpg"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 | 可选值 |
+|------|------|------|------|--------|
+| name | string | 是 | 收藏夹名称 | 最多100字符 |
+| description | string | 否 | 收藏夹描述 | 最多500字符 |
+| type | string | 是 | 收藏夹类型 | MOVIE/EVENT |
+| isPublic | boolean | 否 | 是否公开 | 默认true |
+| coverImage | string | 否 | 封面图片URL | 最多500字符 |
+
+**收藏夹类型说明**:
+- `MOVIE`: 电影收藏夹，只能收藏电影
+- `EVENT`: 活动收藏夹，只能收藏活动
+
+**注意**: 看过功能使用独立的 watched_movies 表，不属于收藏夹系统
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "创建成功",
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "name": "我的科幻片单",
+    "description": "收藏的科幻电影",
+    "type": "MOVIE",
+    "isSystem": false,
+    "isPublic": true,
+    "coverImage": "https://example.com/cover.jpg",
+    "itemCount": 0,
+    "createdAt": "2026-03-01T10:00:00",
+    "updatedAt": "2026-03-01T10:00:00"
+  }
+}
+```
+
+---
+
+#### GET /api/collections
+
+获取用户的所有收藏夹。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "id": 1,
+      "userId": 1,
+      "name": "默认电影收藏夹",
+      "description": null,
+      "type": "MOVIE",
+      "isSystem": true,
+      "isPublic": true,
+      "coverImage": null,
+      "itemCount": 5,
+      "createdAt": "2026-03-01T10:00:00",
+      "updatedAt": "2026-03-01T10:00:00"
+    },
+    {
+      "id": 2,
+      "userId": 1,
+      "name": "默认活动收藏夹",
+      "description": null,
+      "type": "EVENT",
+      "isSystem": true,
+      "isPublic": true,
+      "coverImage": null,
+      "itemCount": 10,
+      "createdAt": "2026-03-01T10:00:00",
+      "updatedAt": "2026-03-01T10:00:00"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/collections/type/{type}
+
+获取用户指定类型的收藏夹。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 | 可选值 |
+|------|------|------|------|--------|
+| type | string | 是 | 收藏夹类型 | MOVIE/EVENT |
+
+**响应示例**: 同获取所有收藏夹
+
+---
+
+#### GET /api/collections/{id}
+
+获取收藏夹详情。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | long | 是 | 收藏夹ID |
+
+**响应示例**: 同创建收藏夹
+
+---
+
+#### PUT /api/collections/{id}
+
+更新收藏夹。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | long | 是 | 收藏夹ID |
+
+**请求体**:
+```json
+{
+  "name": "更新后的名称",
+  "description": "更新后的描述",
+  "isPublic": false,
+  "coverImage": "https://example.com/new-cover.jpg"
+}
+```
+
+**注意**: 系统收藏夹不允许修改名称和类型
+
+**响应示例**: 同创建收藏夹
+
+---
+
+#### DELETE /api/collections/{id}
+
+删除收藏夹。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | long | 是 | 收藏夹ID |
+
+**注意**: 系统收藏夹不允许删除
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
+
+### 6. 收藏项管理接口
+
+#### POST /api/favorites
+
+添加收藏项。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "collectionId": 1,
+  "itemType": "MOVIE",
+  "itemId": 100,
+  "note": "非常喜欢这部电影"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 | 可选值 |
+|------|------|------|------|--------|
+| collectionId | long | 是 | 收藏夹ID | - |
+| itemType | string | 是 | 收藏项类型 | MOVIE/EVENT |
+| itemId | long | 是 | 收藏项ID | 电影ID或活动ID |
+| note | string | 否 | 用户备注 | - |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "添加成功",
+  "data": {
+    "id": 1,
+    "collectionId": 1,
+    "itemType": "MOVIE",
+    "itemId": 100,
+    "note": "非常喜欢这部电影",
+    "createdAt": "2026-03-01T10:00:00",
+    "itemDetail": {
+      "id": 100,
+      "title": "盗梦空间",
+      "posterUrl": "https://example.com/poster.jpg",
+      "rating": 9.3,
+      "year": "2010"
+    }
+  }
+}
+```
+
+---
+
+#### GET /api/favorites/collection/{collectionId}
+
+获取收藏夹中的所有收藏项。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| collectionId | long | 是 | 收藏夹ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "id": 1,
+      "collectionId": 1,
+      "itemType": "MOVIE",
+      "itemId": 100,
+      "note": "非常喜欢这部电影",
+      "createdAt": "2026-03-01T10:00:00",
+      "itemDetail": {
+        "id": 100,
+        "title": "盗梦空间",
+        "posterUrl": "https://example.com/poster.jpg",
+        "rating": 9.3,
+        "year": "2010"
+      }
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/favorites/collection/{collectionId}/type/{itemType}
+
+获取收藏夹中指定类型的收藏项。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 | 可选值 |
+|------|------|------|------|--------|
+| collectionId | long | 是 | 收藏夹ID | - |
+| itemType | string | 是 | 收藏项类型 | MOVIE/EVENT |
+
+**响应示例**: 同获取所有收藏项
+
+---
+
+#### DELETE /api/favorites/collection/{collectionId}/item/{itemType}/{itemId}
+
+移除收藏项。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| collectionId | long | 是 | 收藏夹ID |
+| itemType | string | 是 | 收藏项类型 |
+| itemId | long | 是 | 收藏项ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "移除成功",
+  "data": null
+}
+```
+
+---
+
+#### GET /api/favorites/check/{itemType}/{itemId}
+
+检查用户是否收藏了某个项目。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| itemType | string | 是 | 收藏项类型 |
+| itemId | long | 是 | 收藏项ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "isFavorited": true
+  }
+}
+```
+
+---
+
+### 7. 看过记录接口
+
+#### POST /api/watched
+
+标记电影为看过。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "movieId": 100,
+  "rating": 9.5,
+  "note": "非常精彩的电影"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 | 校验规则 |
+|------|------|------|------|---------|
+| movieId | long | 是 | 电影ID | - |
+| rating | double | 否 | 用户评分 | 0.0-10.0 |
+| note | string | 否 | 观影笔记 | - |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "标记成功",
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "movieId": 100,
+    "watchedAt": "2026-03-01T10:00:00",
+    "rating": 9.5,
+    "note": "非常精彩的电影",
+    "createdAt": "2026-03-01T10:00:00",
+    "updatedAt": "2026-03-01T10:00:00",
+    "movieInfo": {
+      "id": 100,
+      "title": "盗梦空间",
+      "posterUrl": "https://example.com/poster.jpg",
+      "rating": 9.3,
+      "year": "2010"
+    }
+  }
+}
+```
+
+---
+
+#### DELETE /api/watched/{movieId}
+
+取消看过标记。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| movieId | long | 是 | 电影ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "取消成功",
+  "data": null
+}
+```
+
+---
+
+#### PUT /api/watched/{movieId}
+
+更新看过记录。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| movieId | long | 是 | 电影ID |
+
+**请求体**:
+```json
+{
+  "rating": 9.0,
+  "note": "更新后的笔记"
+}
+```
+
+**响应示例**: 同标记看过
+
+---
+
+#### GET /api/watched
+
+获取用户看过的所有电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "id": 1,
+      "userId": 1,
+      "movieId": 100,
+      "watchedAt": "2026-03-01T10:00:00",
+      "rating": 9.5,
+      "note": "非常精彩的电影",
+      "createdAt": "2026-03-01T10:00:00",
+      "updatedAt": "2026-03-01T10:00:00",
+      "movieInfo": {
+        "id": 100,
+        "title": "盗梦空间",
+        "posterUrl": "https://example.com/poster.jpg",
+        "rating": 9.3,
+        "year": "2010"
+      }
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/watched/check/{movieId}
+
+检查用户是否看过某部电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| movieId | long | 是 | 电影ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "isWatched": true
+  }
+}
+```
+
+---
+
+#### GET /api/watched/count
+
+获取用户看过的电影数量。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "count": 42
+  }
+}
+```
+
+---
+
 ## 待实现接口
 
 ### 1. 动态接口

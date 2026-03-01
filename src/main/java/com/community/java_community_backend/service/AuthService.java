@@ -5,11 +5,12 @@ import com.community.java_community_backend.dto.request.RegisterRequest;
 import com.community.java_community_backend.dto.response.LoginResponse;
 import com.community.java_community_backend.dto.response.UserInfoResponse;
 import com.community.java_community_backend.entity.User;
+import com.community.java_community_backend.enums.CollectionType;
 import com.community.java_community_backend.exception.BusinessException;
 import com.community.java_community_backend.repository.UserRepository;
 import com.community.java_community_backend.util.JwtUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 负责用户注册、登录等认证相关业务
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AuthService {
     
@@ -27,6 +27,19 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final UserCodeGeneratorService userCodeGeneratorService;
+    private final CollectionService collectionService;
+    
+    public AuthService(UserRepository userRepository,
+                      PasswordEncoder passwordEncoder,
+                      JwtUtil jwtUtil,
+                      UserCodeGeneratorService userCodeGeneratorService,
+                      @Lazy CollectionService collectionService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+        this.userCodeGeneratorService = userCodeGeneratorService;
+        this.collectionService = collectionService;
+    }
     
     /**
      * 用户注册
@@ -57,6 +70,16 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         log.info("用户注册成功: userId={}, userCode={}, username={}", 
             savedUser.getId(), savedUser.getUserCode(), savedUser.getUsername());
+        
+        // 创建默认收藏夹
+        try {
+            collectionService.createDefaultCollection(savedUser.getId(), "默认电影收藏夹", CollectionType.MOVIE);
+            collectionService.createDefaultCollection(savedUser.getId(), "默认活动收藏夹", CollectionType.EVENT);
+            log.info("默认收藏夹创建成功: userId={}", savedUser.getId());
+        } catch (Exception e) {
+            log.error("创建默认收藏夹失败: userId={}, error={}", savedUser.getId(), e.getMessage());
+            // 不影响注册流程，继续执行
+        }
         
         return UserInfoResponse.fromEntity(savedUser);
     }
