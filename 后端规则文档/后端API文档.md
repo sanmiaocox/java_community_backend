@@ -11,6 +11,14 @@
 1. [接口规范](#接口规范)
 2. [认证说明](#认证说明)
 3. [已实现接口](#已实现接口)
+   - [测试接口](#1-测试接口)
+   - [用户认证接口](#2-用户认证接口)
+   - [用户信息接口](#3-用户信息接口)
+   - [关注/粉丝/好友接口](#4-关注粉丝好友接口)
+   - [收藏夹管理接口](#5-收藏夹管理接口)
+   - [收藏项管理接口](#6-收藏项管理接口)
+   - [看过记录接口](#7-看过记录接口)
+   - [TMDB电影数据接口](#8-tmdb电影数据接口)
 4. [待实现接口](#待实现接口)
 5. [错误码说明](#错误码说明)
 
@@ -721,7 +729,7 @@ Content-Type: application/json
 {
   "collectionId": 1,
   "itemType": "MOVIE",
-  "itemId": 100,
+  "tmdbId": 157336,
   "note": "非常喜欢这部电影"
 }
 ```
@@ -731,8 +739,13 @@ Content-Type: application/json
 |------|------|------|------|--------|
 | collectionId | long | 是 | 收藏夹ID | - |
 | itemType | string | 是 | 收藏项类型 | MOVIE/EVENT |
-| itemId | long | 是 | 收藏项ID | 电影ID或活动ID |
+| tmdbId | long | 是（MOVIE类型） | TMDB电影ID | - |
+| itemId | long | 是（EVENT类型） | 活动ID | - |
 | note | string | 否 | 用户备注 | - |
+
+**功能说明**:
+- 收藏电影时使用`tmdbId`，如果电影不在本地数据库会自动从TMDB获取并保存
+- 收藏活动时使用`itemId`（活动ID）
 
 **响应示例**:
 ```json
@@ -748,10 +761,11 @@ Content-Type: application/json
     "createdAt": "2026-03-01T10:00:00",
     "itemDetail": {
       "id": 100,
-      "title": "盗梦空间",
-      "posterUrl": "https://example.com/poster.jpg",
-      "rating": 9.3,
-      "year": "2010"
+      "tmdbId": 157336,
+      "title": "星际穿越",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+      "rating": 8.4,
+      "year": "2014"
     }
   }
 }
@@ -899,7 +913,7 @@ Content-Type: application/json
 **请求体**:
 ```json
 {
-  "movieId": 100,
+  "tmdbId": 157336,
   "rating": 9.5,
   "note": "非常精彩的电影"
 }
@@ -908,9 +922,13 @@ Content-Type: application/json
 **请求参数说明**:
 | 参数 | 类型 | 必填 | 说明 | 校验规则 |
 |------|------|------|------|---------|
-| movieId | long | 是 | 电影ID | - |
+| tmdbId | long | 是 | TMDB电影ID | - |
 | rating | double | 否 | 用户评分 | 0.0-10.0 |
 | note | string | 否 | 观影笔记 | - |
+
+**功能说明**:
+- 如果电影不在本地数据库，会自动从TMDB获取电影信息并保存
+- 使用TMDB ID而非本地电影ID，方便前端直接使用TMDB数据
 
 **响应示例**:
 ```json
@@ -928,10 +946,11 @@ Content-Type: application/json
     "updatedAt": "2026-03-01T10:00:00",
     "movieInfo": {
       "id": 100,
-      "title": "盗梦空间",
-      "posterUrl": "https://example.com/poster.jpg",
-      "rating": 9.3,
-      "year": "2010"
+      "tmdbId": 157336,
+      "title": "星际穿越",
+      "posterUrl": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+      "rating": 8.4,
+      "year": "2014"
     }
   }
 }
@@ -1085,6 +1104,359 @@ Authorization: Bearer {token}
   }
 }
 ```
+
+---
+
+### 8. TMDB电影数据接口
+
+#### GET /api/tmdb/search
+
+搜索电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| keyword | string | 是 | - | 搜索关键词 |
+| page | int | 否 | 1 | 页码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/search?keyword=星际穿越&page=1
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "page": 1,
+    "results": [
+      {
+        "id": 157336,
+        "title": "星际穿越",
+        "original_title": "Interstellar",
+        "overview": "在不远的未来，随着地球自然环境的恶化...",
+        "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+        "backdrop_path": "/xu9zaAevzQ5nnrsXN6JcahLnG4i.jpg",
+        "release_date": "2014-11-05",
+        "vote_average": 8.4,
+        "vote_count": 32000,
+        "popularity": 150.5
+      }
+    ],
+    "total_pages": 5,
+    "total_results": 100
+  }
+}
+```
+
+---
+
+#### GET /api/tmdb/popular
+
+获取热门电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 1 | 页码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/popular?page=1
+```
+
+**响应示例**: 同搜索电影接口
+
+---
+
+#### GET /api/tmdb/now-playing
+
+获取正在上映的电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 1 | 页码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/now-playing?page=1
+```
+
+**响应示例**: 同搜索电影接口
+
+---
+
+#### GET /api/tmdb/upcoming
+
+获取即将上映的电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 1 | 页码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/upcoming?page=1
+```
+
+**响应示例**: 同搜索电影接口
+
+---
+
+#### GET /api/tmdb/top-rated
+
+获取高分电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 1 | 页码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/top-rated?page=1
+```
+
+**响应示例**: 同搜索电影接口
+
+---
+
+#### GET /api/tmdb/movie/{tmdbId}
+
+获取电影详情。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**请求示例**:
+```bash
+GET /api/tmdb/movie/157336
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 157336,
+    "title": "星际穿越",
+    "original_title": "Interstellar",
+    "tagline": "人类的下一步，将迈向宇宙",
+    "overview": "在不远的未来，随着地球自然环境的恶化...",
+    "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    "backdrop_path": "/xu9zaAevzQ5nnrsXN6JcahLnG4i.jpg",
+    "release_date": "2014-11-05",
+    "runtime": 169,
+    "vote_average": 8.4,
+    "vote_count": 32000,
+    "popularity": 150.5,
+    "budget": 165000000,
+    "revenue": 677463813,
+    "genres": [
+      {
+        "id": 12,
+        "name": "冒险"
+      },
+      {
+        "id": 18,
+        "name": "剧情"
+      },
+      {
+        "id": 878,
+        "name": "科幻"
+      }
+    ],
+    "production_companies": [
+      {
+        "id": 923,
+        "name": "Legendary Pictures"
+      }
+    ],
+    "production_countries": [
+      {
+        "iso_3166_1": "US",
+        "name": "United States of America"
+      }
+    ],
+    "spoken_languages": [
+      {
+        "iso_639_1": "en",
+        "name": "English"
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### GET /api/tmdb/movie/{tmdbId}/credits
+
+获取电影演职人员。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**请求示例**:
+```bash
+GET /api/tmdb/movie/157336/credits
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 157336,
+    "cast": [
+      {
+        "id": 287,
+        "name": "马修·麦康纳",
+        "original_name": "Matthew McConaughey",
+        "character": "Cooper",
+        "profile_path": "/sY2mwpafcwqyYS1sOySu1MENDse.jpg",
+        "order": 0
+      },
+      {
+        "id": 1813,
+        "name": "安妮·海瑟薇",
+        "original_name": "Anne Hathaway",
+        "character": "Brand",
+        "profile_path": "/tLelKoPx5lG6OhJJTAZz2cB9Fqr.jpg",
+        "order": 1
+      }
+    ],
+    "crew": [
+      {
+        "id": 525,
+        "name": "克里斯托弗·诺兰",
+        "original_name": "Christopher Nolan",
+        "job": "Director",
+        "department": "Directing",
+        "profile_path": "/xuAIuYSmsUzKlUMBFGVZaWsY3DZ.jpg"
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### GET /api/tmdb/movie/{tmdbId}/images
+
+获取电影图片。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**请求示例**:
+```bash
+GET /api/tmdb/movie/157336/images
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 157336,
+    "backdrops": [
+      {
+        "file_path": "/xu9zaAevzQ5nnrsXN6JcahLnG4i.jpg",
+        "width": 1920,
+        "height": 1080,
+        "vote_average": 5.384,
+        "vote_count": 4
+      }
+    ],
+    "posters": [
+      {
+        "file_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+        "width": 2000,
+        "height": 3000,
+        "vote_average": 5.318,
+        "vote_count": 3
+      }
+    ]
+  }
+}
+```
+
+**图片URL拼接说明**:
+- 完整图片URL = `https://image.tmdb.org/t/p/{size}{file_path}`
+- 常用尺寸：
+  - 海报：`w185`, `w342`, `w500`, `w780`, `original`
+  - 背景图：`w300`, `w780`, `w1280`, `original`
+- 示例：`https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg`
 
 ---
 
@@ -1566,11 +1938,14 @@ Authorization: Bearer {token}
 2. ✅ 获取/更新个人资料
 3. ✅ 关注/取消关注用户
 4. ✅ 获取关注/粉丝/好友列表
-5. ⏳ 发布动态
-6. ⏳ 获取动态列表
-7. ⏳ 点赞动态
-8. ⏳ 评论动态
-9. ⏳ 收藏电影
+5. ✅ 收藏夹管理（创建/获取/更新/删除）
+6. ✅ 收藏项管理（添加/移除/查询）
+7. ✅ 看过记录管理（标记/取消/更新/查询）
+8. ✅ TMDB电影数据查询（搜索/热门/详情等8个接口）
+9. ⏳ 发布动态
+10. ⏳ 获取动态列表
+11. ⏳ 点赞动态
+12. ⏳ 评论动态
 
 ### 中优先级（重要功能）⭐⭐
 10. ⏳ 获取动态详情
@@ -1587,6 +1962,21 @@ Authorization: Bearer {token}
 ---
 
 ## 更新日志
+
+### 2026-03-02
+- ✅ 实现TMDB电影数据接口（8个接口）
+  - 搜索电影
+  - 获取热门电影
+  - 获取正在上映电影
+  - 获取即将上映电影
+  - 获取高分电影
+  - 获取电影详情
+  - 获取演职人员
+  - 获取电影图片
+- ✅ 修改Movie实体，添加tmdbId字段
+- ✅ 实现MovieService，处理TMDB电影到本地数据库的转换
+- ✅ 修改看过和收藏功能，支持TMDB电影自动保存
+- ✅ 修复Jackson依赖缺失问题
 
 ### 2026-02-28
 - ✅ 实现用户个人资料接口（获取、更新）

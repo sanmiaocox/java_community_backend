@@ -23,6 +23,9 @@ public class Movie {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @Column(unique = true)
+    private Integer tmdbId;
+    
     @Column(nullable = false, length = 200)
     private String title;
     

@@ -84,6 +84,7 @@ SHOW CREATE TABLE users;
 -- 创建电影表
 CREATE TABLE IF NOT EXISTS movies (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '电影ID',
+    tmdb_id INT UNIQUE COMMENT 'TMDB电影ID',
     title VARCHAR(200) NOT NULL COMMENT '电影标题',
     original_title VARCHAR(200) DEFAULT NULL COMMENT '原始标题',
     aliases VARCHAR(500) DEFAULT NULL COMMENT '别名（JSON数组）',
@@ -107,12 +108,28 @@ CREATE TABLE IF NOT EXISTS movies (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_title (title),
     INDEX idx_rating (rating),
-    INDEX idx_year (year)
+    INDEX idx_year (year),
+    INDEX idx_tmdb_id (tmdb_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='电影表';
 ```
 
 **执行时间**: 2026-02-27  
 **说明**: 存储电影详细信息，只保留豆瓣和TMDB链接
+
+### 如果表已存在，添加tmdb_id字段
+
+```sql
+-- 为现有movies表添加tmdb_id字段
+ALTER TABLE movies 
+ADD COLUMN tmdb_id INT UNIQUE COMMENT 'TMDB电影ID' 
+AFTER id;
+
+-- 添加索引
+CREATE INDEX idx_tmdb_id ON movies(tmdb_id);
+```
+
+**执行时间**: 2026-03-02  
+**说明**: 为现有电影表添加TMDB ID字段，用于关联TMDB数据
 
 ---
 

@@ -9,9 +9,20 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MovieRepository extends JpaRepository<Movie, Long> {
+    
+    /**
+     * 根据TMDB ID查询电影
+     */
+    Optional<Movie> findByTmdbId(Integer tmdbId);
+    
+    /**
+     * 检查TMDB ID是否存在
+     */
+    boolean existsByTmdbId(Integer tmdbId);
     
     // 获取评分最高的电影（用于轮播）
     List<Movie> findTop5ByOrderByRatingDesc();

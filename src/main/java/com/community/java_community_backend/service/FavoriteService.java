@@ -28,6 +28,7 @@ public class FavoriteService {
     private final UserRepository userRepository;
     private final MovieRepository movieRepository;
     private final EventRepository eventRepository;
+    private final MovieService movieService;
     
     /**
      * 添加收藏项
@@ -55,14 +56,26 @@ public class FavoriteService {
             throw new RuntimeException("活动收藏夹只能收藏活动");
         }
         
+        // 【集成TMDB】如果是电影类型，保存到本地数据库
+        if (request.getItemType() == ItemType.MOVIE) {
+            if (request.getTmdbId() == null) {
+                throw new RuntimeException("电影的TMDB ID不能为空");
+            }
+            Movie movie = movieService.saveOrUpdateMovie(request.getTmdbId());
+            request.setItemId(movie.getId()); // 使用本地ID
+        } else {
+            // 活动类型，验证活动是否存在
+            if (request.getItemId() == null) {
+                throw new RuntimeException("活动ID不能为空");
+            }
+            validateItem(request.getItemType(), request.getItemId());
+        }
+        
         // 检查是否已收藏
         if (favoriteRepository.existsByCollectionIdAndItemTypeAndItemId(
                 request.getCollectionId(), request.getItemType(), request.getItemId())) {
             throw new RuntimeException("该项目已在收藏夹中");
         }
-        
-        // 验证收藏项是否存在
-        validateItem(request.getItemType(), request.getItemId());
         
         // 创建收藏项
         Favorite favorite = new Favorite();

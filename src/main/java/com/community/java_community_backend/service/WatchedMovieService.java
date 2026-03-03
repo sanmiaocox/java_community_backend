@@ -26,6 +26,7 @@ public class WatchedMovieService {
     private final WatchedMovieRepository watchedMovieRepository;
     private final UserRepository userRepository;
     private final MovieRepository movieRepository;
+    private final MovieService movieService;
     
     /**
      * 标记电影为看过
@@ -36,12 +37,11 @@ public class WatchedMovieService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
         
-        // 验证电影
-        Movie movie = movieRepository.findById(request.getMovieId())
-                .orElseThrow(() -> new RuntimeException("电影不存在"));
+        // 【集成TMDB】保存电影到本地数据库
+        Movie movie = movieService.saveOrUpdateMovie(request.getTmdbId());
         
         // 检查是否已标记
-        if (watchedMovieRepository.existsByUserIdAndMovieId(userId, request.getMovieId())) {
+        if (watchedMovieRepository.existsByUserIdAndMovieId(userId, movie.getId())) {
             throw new RuntimeException("该电影已标记为看过");
         }
         

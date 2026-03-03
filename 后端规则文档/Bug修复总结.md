@@ -174,6 +174,54 @@ private BigDecimal rating;
 
 ---
 
+### Bug 6: Jackson依赖缺失 🔴
+
+**问题描述**:
+在实现TMDB集成时，`TmdbService`、`MovieService` 和 `TmdbController` 使用了 `JsonNode` 和 `ObjectMapper` 类，但 `pom.xml` 中缺少 `jackson-databind` 依赖。
+
+**错误代码**:
+```java
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+```
+
+**错误信息**:
+```
+找不到符号
+  符号:   程序包 com.fasterxml.jackson.databind
+  位置: 程序包 com.fasterxml.jackson
+```
+
+**根本原因**:
+- Spring Boot 4.0.3 的 `spring-boot-starter-webmvc` 可能没有自动包含 Jackson 依赖
+- 需要显式添加 `jackson-databind` 依赖
+
+**修复方案**:
+在 `pom.xml` 中添加 Jackson 依赖：
+
+```xml
+<!-- Jackson JSON处理 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+</dependency>
+```
+
+**修复文件**: `pom.xml`
+
+**重要性**: 🔴 高 - 导致编译失败
+
+**影响范围**:
+- `TmdbService.java` (多处使用 JsonNode)
+- `MovieService.java` (使用 JsonNode 解析 TMDB 数据)
+- `TmdbController.java` (返回 JsonNode 类型)
+
+**预防措施**: 
+- 使用第三方 JSON 处理库时，确保在 `pom.xml` 中显式声明依赖
+- 不要假设 Spring Boot Starter 会自动包含所有需要的依赖
+
+---
+
 ## ✅ 验证结果
 
 ### 编译测试
@@ -199,10 +247,10 @@ cd "e:/final project/code/java_community_backend"
 
 | Bug类型 | 数量 | 严重程度 |
 |---------|------|----------|
-| 编译错误 | 2 | 🔴 高 |
+| 编译错误 | 3 | 🔴 高 |
 | 运行时错误 | 1 | 🔴 高 |
 | 运行时风险 | 2 | 🟡 中 |
-| **合计** | **5** | - |
+| **合计** | **6** | - |
 
 ---
 
@@ -234,8 +282,9 @@ cd "e:/final project/code/java_community_backend"
 4. `src/main/java/com/community/java_community_backend/repository/WatchedMovieRepository.java`
 5. `src/main/java/com/community/java_community_backend/service/AuthService.java`
 6. `src/main/java/com/community/java_community_backend/entity/WatchedMovie.java`
+7. `pom.xml`
 
-**总计**: 6个文件
+**总计**: 7个文件
 
 ---
 
