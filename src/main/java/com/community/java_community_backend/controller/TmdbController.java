@@ -146,5 +146,21 @@ public class TmdbController {
         }
         return ApiResponse.error("获取电影图片失败");
     }
+    
+    /**
+     * 获取推荐电影
+     * GET /api/tmdb/movie/{tmdbId}/recommendations?page=1
+     */
+    @GetMapping("/movie/{tmdbId}/recommendations")
+    public ApiResponse<Object> getMovieRecommendations(
+            @PathVariable int tmdbId,
+            @RequestParam(defaultValue = "1") int page) {
+        JsonNode result = tmdbService.getMovieRecommendations(tmdbId, page);
+        if (result != null) {
+            Map<String, Object> data = objectMapper.convertValue(result, Map.class);
+            return ApiResponse.success(data);
+        }
+        return ApiResponse.error("获取推荐电影失败");
+    }
 }
 

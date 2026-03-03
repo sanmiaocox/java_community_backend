@@ -108,5 +108,11 @@ public class TmdbService {
             baseUrl, page);
         return executeRequest(url);
     }
+    
+    public JsonNode getMovieRecommendations(int movieId, int page) {
+        String url = String.format("%s/movie/%d/recommendations?language=zh-CN&page=%d", 
+            baseUrl, movieId, page);
+        return executeRequest(url);
+    }
 }
 

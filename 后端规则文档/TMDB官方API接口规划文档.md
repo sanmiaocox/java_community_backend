@@ -198,7 +198,7 @@ GET /search/movie?query=星际穿越&language=zh-CN&page=1
 
 #### 4.1 获取相似电影
 ```
-GET /movie/{movie_id}/similar
+GET /movie/{movie_id}/similar--后边有时间再实现
 ```
 **用途**: 根据电影ID获取相似电影推荐
 
@@ -211,7 +211,7 @@ GET /movie/{movie_id}/similar
 
 ---
 
-#### 4.2 获取推荐电影
+#### 4.2 获取推荐电影--需要实现
 ```
 GET /movie/{movie_id}/recommendations
 ```
@@ -224,7 +224,7 @@ GET /movie/{movie_id}/recommendations
 
 ---
 
-#### 4.3 获取电影视频
+#### 4.3 获取电影视频--不需要
 ```
 GET /movie/{movie_id}/videos
 ```
@@ -236,7 +236,7 @@ GET /movie/{movie_id}/videos
 
 ---
 
-#### 4.4 获取电影评论
+#### 4.4 获取电影评论--暂时并不需要
 ```
 GET /movie/{movie_id}/reviews
 ```
@@ -249,7 +249,7 @@ GET /movie/{movie_id}/reviews
 
 ---
 
-#### 4.5 发现电影（高级筛选）
+#### 4.5 发现电影（高级筛选）--后边有时间再实现
 ```
 GET /discover/movie
 ```
@@ -267,7 +267,7 @@ GET /discover/movie
 
 ---
 
-#### 4.6 获取电影类型列表
+#### 4.6 获取电影类型列表--后边有时间再实现
 ```
 GET /genre/movie/list
 ```

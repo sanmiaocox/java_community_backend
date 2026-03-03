@@ -1162,7 +1162,7 @@ GET /api/tmdb/search?keyword=星际穿越&page=1
 
 #### GET /api/tmdb/popular
 
-获取热门电影。
+获取热门电影。热门 / 流行 / 人气榜
 
 **是否需要Token**: ✅ 是
 
@@ -1187,7 +1187,7 @@ GET /api/tmdb/popular?page=1
 
 #### GET /api/tmdb/now-playing
 
-获取正在上映的电影。
+获取正在上映的电影。正在热映 / 影院热映
 
 **是否需要Token**: ✅ 是
 
@@ -1212,7 +1212,7 @@ GET /api/tmdb/now-playing?page=1
 
 #### GET /api/tmdb/upcoming
 
-获取即将上映的电影。
+获取即将上映的电影。即将上映 / 待上映
 
 **是否需要Token**: ✅ 是
 
@@ -1237,7 +1237,7 @@ GET /api/tmdb/upcoming?page=1
 
 #### GET /api/tmdb/top-rated
 
-获取高分电影。
+获取高分电影。高分好评 / 最佳评分
 
 **是否需要Token**: ✅ 是
 
@@ -1457,6 +1457,78 @@ GET /api/tmdb/movie/157336/images
   - 海报：`w185`, `w342`, `w500`, `w780`, `original`
   - 背景图：`w300`, `w780`, `w1280`, `original`
 - 示例：`https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg`
+
+---
+
+#### GET /api/tmdb/movie/{tmdbId}/recommendations
+
+获取推荐电影（根据指定电影推荐相似电影）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 1 | 页码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/movie/157336/recommendations?page=1
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "page": 1,
+    "results": [
+      {
+        "id": 27205,
+        "title": "盗梦空间",
+        "original_title": "Inception",
+        "overview": "道姆·柯布是一个经验老道的窃贼...",
+        "poster_path": "/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+        "backdrop_path": "/s3TBrRGB1iav7gFOCNx3H31MoES.jpg",
+        "release_date": "2010-07-15",
+        "vote_average": 8.4,
+        "vote_count": 35000,
+        "popularity": 120.5
+      },
+      {
+        "id": 550,
+        "title": "搏击俱乐部",
+        "original_title": "Fight Club",
+        "overview": "杰克是一个大汽车公司的职员...",
+        "poster_path": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+        "backdrop_path": "/fCayJrkfRaCRCTh8GqN30f8oyQF.jpg",
+        "release_date": "1999-10-15",
+        "vote_average": 8.4,
+        "vote_count": 28000,
+        "popularity": 95.3
+      }
+    ],
+    "total_pages": 10,
+    "total_results": 200
+  }
+}
+```
+
+**使用场景**:
+- 电影详情页的"相关推荐"模块
+- "猜你喜欢"功能
+- 根据用户看过的电影推荐新电影
 
 ---
 
