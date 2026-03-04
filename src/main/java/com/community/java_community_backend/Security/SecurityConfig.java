@@ -31,6 +31,10 @@ public class SecurityConfig {
                         .requestMatchers("/hello").permitAll()
                         // 放行认证接口（注册、登录）
                         .requestMatchers("/api/auth/**").permitAll()
+                        // 放行上传接口
+                        .requestMatchers("/api/upload/**").permitAll()
+                        // 放行静态资源
+                        .requestMatchers("/uploads/**").permitAll()
                         // 其他所有接口都需要认证（需要Token）
                         .anyRequest().permitAll()  // 暂时全部放行，后续实现JWT过滤器后改为authenticated()
                 )

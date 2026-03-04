@@ -19,6 +19,7 @@
    - [收藏项管理接口](#6-收藏项管理接口)
    - [看过记录接口](#7-看过记录接口)
    - [TMDB电影数据接口](#8-tmdb电影数据接口)
+   - [文件上传接口](#9-文件上传接口)
 4. [待实现接口](#待实现接口)
 5. [错误码说明](#错误码说明)
 
@@ -517,7 +518,7 @@ Content-Type: application/json
   "description": "收藏的科幻电影",
   "type": "MOVIE",
   "isPublic": true,
-  "coverImage": "https://example.com/cover.jpg"
+  "coverImage": "abc123-def456-789.jpg"
 }
 ```
 
@@ -528,7 +529,9 @@ Content-Type: application/json
 | description | string | 否 | 收藏夹描述 | 最多500字符 |
 | type | string | 是 | 收藏夹类型 | MOVIE/EVENT |
 | isPublic | boolean | 否 | 是否公开 | 默认true |
-| coverImage | string | 否 | 封面图片URL | 最多500字符 |
+| coverImage | string | 否 | 封面图片文件名 | 只传文件名，不是完整URL |
+
+**注意**: `coverImage` 字段只需传入文件名（如 `abc123.jpg`），不需要传完整URL。前端显示时自己拼接：`http://10.0.2.2:7070/uploads/{coverImage}`
 
 **收藏夹类型说明**:
 - `MOVIE`: 电影收藏夹，只能收藏电影
@@ -549,13 +552,15 @@ Content-Type: application/json
     "type": "MOVIE",
     "isSystem": false,
     "isPublic": true,
-    "coverImage": "https://example.com/cover.jpg",
+    "coverImage": "abc123-def456-789.jpg",
     "itemCount": 0,
     "createdAt": "2026-03-01T10:00:00",
     "updatedAt": "2026-03-01T10:00:00"
   }
 }
 ```
+
+**注意**: 响应中的 `coverImage` 字段只包含文件名，前端需要拼接完整URL：`http://10.0.2.2:7070/uploads/{coverImage}`
 
 ---
 
@@ -671,11 +676,13 @@ Content-Type: application/json
   "name": "更新后的名称",
   "description": "更新后的描述",
   "isPublic": false,
-  "coverImage": "https://example.com/new-cover.jpg"
+  "coverImage": "new-cover-abc123.jpg"
 }
 ```
 
-**注意**: 系统收藏夹不允许修改名称和类型
+**注意**: 
+- 系统收藏夹不允许修改名称和类型
+- `coverImage` 字段只需传入文件名，不需要传完整URL
 
 **响应示例**: 同创建收藏夹
 
@@ -1532,6 +1539,179 @@ GET /api/tmdb/movie/157336/recommendations?page=1
 
 ---
 
+### 9. 文件上传接口
+
+#### POST /api/upload/image
+
+上传图片文件。
+
+**是否需要Token**: ❌ 否（公开接口）
+
+**请求头**:
+```
+Content-Type: multipart/form-data
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| file | File | 是 | 图片文件 |
+
+**支持的图片格式**:
+- JPEG/JPG
+- PNG
+- GIF
+- WEBP
+
+**文件大小限制**: 最大10MB
+
+**请求示例**:
+```bash
+curl -X POST http://localhost:7070/api/upload/image \
+  -F "file=@/path/to/image.jpg"
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "filename": "abc123-def456-789.jpg"
+  }
+}
+```
+
+**注意**: 
+- 响应只返回文件名，不返回完整URL
+- 前端需要自己拼接完整URL：`http://10.0.2.2:7070/uploads/{filename}`
+- 这样设计的好处：
+  - 数据库只存储文件名，不存储域名
+  - 方便后期更换域名或CDN
+  - 减少数据库存储空间
+
+**错误响应**:
+```json
+{
+  "code": 400,
+  "message": "只能上传图片文件",
+  "data": null
+}
+```
+
+**使用场景**:
+- 用户头像上传
+- 收藏夹封面图上传
+- 动态图片上传
+- 活动海报上传
+
+**使用流程**:
+1. 前端选择图片文件
+2. 调用上传接口 `POST /api/upload/image`
+3. 获取返回的图片URL
+4. 在创建/更新其他资源时，将图片URL作为参数传递
+
+**前端示例（Flutter）**:
+```dart
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+
+// 上传图片并返回文件名
+Future<String?> uploadImage(File imageFile) async {
+  var request = http.MultipartRequest(
+    'POST',
+    Uri.parse('http://10.0.2.2:7070/api/upload/image'),
+  );
+  
+  request.files.add(
+    await http.MultipartFile.fromPath('file', imageFile.path),
+  );
+  
+  var response = await request.send();
+  if (response.statusCode == 200) {
+    var responseData = await response.stream.bytesToString();
+    var jsonData = jsonDecode(responseData);
+    return jsonData['data']['filename'];  // 只返回文件名
+  }
+  return null;
+}
+
+// 拼接完整的图片URL
+String getImageUrl(String filename) {
+  return 'http://10.0.2.2:7070/uploads/$filename';
+}
+
+// 使用示例：创建收藏夹时上传封面
+Future<void> createCollectionWithCover(File? coverImage) async {
+  String? coverFilename;
+  
+  // 1. 先上传图片，获取文件名
+  if (coverImage != null) {
+    coverFilename = await uploadImage(coverImage);
+  }
+  
+  // 2. 创建收藏夹（只传文件名）
+  final response = await http.post(
+    Uri.parse('http://10.0.2.2:7070/api/collections'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'name': '我的收藏夹',
+      'type': 'MOVIE',
+      'isPublic': true,
+      'coverImage': coverFilename,  // 只传文件名，不是完整URL
+    }),
+  );
+  
+  // 3. 显示图片时，前端拼接完整URL
+  if (coverFilename != null) {
+    String imageUrl = getImageUrl(coverFilename);
+    // 使用 imageUrl 显示图片
+  }
+}
+```
+
+**注意事项**:
+- 上传的图片会保存在服务器的项目根目录 `uploads/` 文件夹
+- 文件名会自动生成UUID，避免重复
+- **响应只返回文件名，不返回完整URL**
+- **前端需要自己拼接完整URL**: `http://10.0.2.2:7070/uploads/{filename}`
+- **数据库中只存储文件名**，不存储完整URL
+- 这样设计的好处：
+  - 方便后期更换域名或CDN
+  - 减少数据库存储空间
+  - 统一管理图片访问路径
+
+---
+
+#### GET /uploads/{filename}
+
+访问已上传的图片。
+
+**是否需要Token**: ❌ 否（公开接口）
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| filename | string | 是 | 图片文件名 |
+
+**请求示例**:
+```bash
+GET http://localhost:7070/uploads/abc123-def456-789.jpg
+```
+
+**响应**: 直接返回图片文件
+
+**使用场景**:
+- 在前端显示上传的图片
+- 作为 `<img>` 标签的 `src` 属性
+- 作为头像、封面等图片的URL
+
+---
+
 ## 待实现接口
 
 ### 1. 动态接口
@@ -2013,27 +2193,42 @@ GET /api/tmdb/movie/157336/recommendations?page=1
 5. ✅ 收藏夹管理（创建/获取/更新/删除）
 6. ✅ 收藏项管理（添加/移除/查询）
 7. ✅ 看过记录管理（标记/取消/更新/查询）
-8. ✅ TMDB电影数据查询（搜索/热门/详情等8个接口）
-9. ⏳ 发布动态
-10. ⏳ 获取动态列表
-11. ⏳ 点赞动态
-12. ⏳ 评论动态
+8. ✅ TMDB电影数据查询（搜索/热门/详情/推荐等9个接口）
+9. ✅ 图片上传功能
+10. ⏳ 发布动态
+11. ⏳ 获取动态列表
+12. ⏳ 点赞动态
+13. ⏳ 评论动态
 
 ### 中优先级（重要功能）⭐⭐
-10. ⏳ 获取动态详情
-11. ⏳ 删除动态
-12. ⏳ 删除评论
-13. ⏳ 获取用户动态列表
-14. ⏳ 获取收藏列表
+14. ⏳ 获取动态详情
+15. ⏳ 删除动态
+16. ⏳ 删除评论
+17. ⏳ 获取用户动态列表
+18. ⏳ 获取收藏列表
 
 ### 低优先级（辅助功能）⭐
-15. ⏳ 活动相关接口
-16. ⏳ 点赞评论
-17. ⏳ 获取电影动态列表
+19. ⏳ 活动相关接口
+20. ⏳ 点赞评论
+21. ⏳ 获取电影动态列表
 
 ---
 
 ## 更新日志
+
+### 2026-03-04
+- ✅ 实现图片上传接口
+  - POST /api/upload/image - 上传图片
+  - GET /uploads/{filename} - 访问图片
+  - **重要变更**: 上传接口只返回文件名，不返回完整URL
+  - 数据库中只存储文件名，前端负责拼接完整URL
+- ✅ 实现TMDB推荐电影接口
+  - GET /api/tmdb/movie/{tmdbId}/recommendations
+- ✅ 修复收藏夹响应JSON序列化问题
+  - 添加 @JsonInclude(JsonInclude.Include.NON_NULL) 注解
+- ✅ 配置静态资源访问
+- ✅ 更新SecurityConfig，放行上传接口和静态资源
+- ✅ 修改文件上传路径为项目根目录的 uploads 文件夹
 
 ### 2026-03-02
 - ✅ 实现TMDB电影数据接口（8个接口）
