@@ -9,8 +9,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * 活动参与者实体类
+ */
 @Entity
-@Table(name = "event_participants")
+@Table(name = "event_participants", 
+    uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "user_id"}),
+    indexes = {
+        @Index(name = "idx_event_id", columnList = "event_id"),
+        @Index(name = "idx_user_id", columnList = "user_id")
+    }
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,4 +42,3 @@ public class EventParticipant {
     @Column(updatable = false)
     private LocalDateTime joinedAt;
 }
-

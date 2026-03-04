@@ -20,6 +20,7 @@
    - [看过记录接口](#7-看过记录接口)
    - [TMDB电影数据接口](#8-tmdb电影数据接口)
    - [文件上传接口](#9-文件上传接口)
+   - [活动管理接口](#10-活动管理接口)
 4. [待实现接口](#待实现接口)
 5. [错误码说明](#错误码说明)
 
@@ -1712,6 +1713,399 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 
 ---
 
+### 10. 活动管理接口
+
+#### POST /api/events
+
+创建活动。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "title": "《星际穿越》IMAX重映观影团",
+  "imageUrl": "event-cover-abc123.jpg",
+  "eventDate": "2026-03-15T19:30:00",
+  "location": "北京国际影城IMAX厅",
+  "maxParticipants": 80,
+  "type": "观影团",
+  "description": "一起去看IMAX版星际穿越！",
+  "movieId": 000000
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| title | string | 是 | 活动标题，最多200字符 |
+| imageUrl | string | 否 | 活动封面图片文件名 |
+| eventDate | datetime | 是 | 活动时间，必须是未来时间 |
+| location | string | 是 | 活动地点，最多200字符 |
+| maxParticipants | int | 是 | 最大参与人数，默认100 |
+| type | string | 是 | 活动类型，如"观影团"、"影评征集"、"线下活动" |
+| description | string | 否 | 活动描述，最多2000字符 |
+| movieId | long | 是 | 关联的电影ID（必填） |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "title": "《星际穿越》IMAX重映观影团",
+    "imageUrl": "event-cover-abc123.jpg",
+    "eventDate": "2026-03-15T19:30:00",
+    "location": "北京国际影城IMAX厅",
+    "participants": 0,
+    "maxParticipants": 80,
+    "type": "观影团",
+    "description": "一起去看IMAX版星际穿越！",
+    "movieId": 100,
+    "movieTitle": "星际穿越",
+    "moviePosterUrl": "poster-abc123.jpg",
+    "createdAt": "2026-03-04T10:00:00",
+    "updatedAt": "2026-03-04T10:00:00",
+    "isParticipant": false
+  }
+}
+```
+
+**注意**: 
+- 活动必须关联一个电影
+- 响应中会包含关联电影的基本信息（标题、海报）
+
+---
+
+#### GET /api/events
+
+获取活动列表（分页，支持筛选和搜索）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+| type | string | 否 | - | 按类型筛选 |
+| movieId | long | 否 | - | 按电影ID筛选 |
+| keyword | string | 否 | - | 搜索关键词（标题或描述） |
+
+**请求示例**:
+```bash
+# 获取所有活动
+GET /api/events?page=0&size=20
+
+# 按类型筛选
+GET /api/events?type=观影团
+
+# 按电影ID筛选
+GET /api/events?movieId=100
+
+# 搜索活动
+GET /api/events?keyword=星际穿越
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "title": "《星际穿越》IMAX重映观影团",
+        "imageUrl": "event-cover-abc123.jpg",
+        "eventDate": "2026-03-15T19:30:00",
+        "location": "北京国际影城IMAX厅",
+        "participants": 58,
+        "maxParticipants": 80,
+        "type": "观影团",
+        "description": "一起去看IMAX版星际穿越！",
+        "movieId": 100,
+        "movieTitle": "星际穿越",
+        "moviePosterUrl": "poster-abc123.jpg",
+        "createdAt": "2026-03-04T10:00:00",
+        "updatedAt": "2026-03-04T10:00:00",
+        "isParticipant": true
+      }
+    ],
+    "totalElements": 100,
+    "totalPages": 5,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### GET /api/events/{eventId}
+
+获取活动详情。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**: 同创建活动
+
+---
+
+#### PUT /api/events/{eventId}
+
+更新活动（只能更新自己创建的活动）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**请求体**:
+```json
+{
+  "title": "更新后的标题",
+  "imageUrl": "new-cover-abc123.jpg",
+  "eventDate": "2026-03-16T19:30:00",
+  "location": "新的地点",
+  "maxParticipants": 100,
+  "type": "观影团",
+  "description": "更新后的描述",
+  "movieId": 101
+}
+```
+
+**注意**: 所有字段都是可选的，只更新提供的字段
+
+**响应示例**: 同创建活动
+
+---
+
+#### DELETE /api/events/{eventId}
+
+删除活动（只能删除自己创建的活动）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+#### POST /api/events/{eventId}/join
+
+参加活动。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "joined": true,
+    "participants": 59
+  }
+}
+```
+
+**错误响应**:
+```json
+{
+  "code": 400,
+  "message": "活动已满员",
+  "data": null
+}
+```
+
+---
+
+#### DELETE /api/events/{eventId}/join
+
+取消参加活动。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "joined": false,
+    "participants": 58
+  }
+}
+```
+
+---
+
+#### GET /api/events/{eventId}/participants
+
+获取活动参与者列表。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "userId": 2,
+      "username": "影迷小李",
+      "userCode": "0002",
+      "avatar": "avatar-def456.jpg",
+      "joinedAt": "2026-03-04T11:00:00"
+    },
+    {
+      "id": 2,
+      "userId": 3,
+      "username": "电影达人",
+      "userCode": "0003",
+      "avatar": "avatar-ghi789.jpg",
+      "joinedAt": "2026-03-04T12:00:00"
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/events/{eventId}/joined
+
+检查当前用户是否已参加活动。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "isJoined": true
+  }
+}
+```
+
+---
+
+#### GET /api/events/user/{userId}/joined
+
+获取用户参加的活动列表。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| userId | long | 是 | 用户ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**: 同获取活动列表
+
+---
+
 ## 待实现接口
 
 ### 1. 动态接口
@@ -1721,12 +2115,6 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 获取动态列表（分页）。
 
 **是否需要Token**: ✅ 是
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 0 | 页码 |
-| size | int | 否 | 20 | 每页数量 |
 
 **响应示例**:
 ```json
@@ -1997,131 +2385,7 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 
 ---
 
-### 5. 活动接口
-
-#### GET /api/events
-
-获取活动列表（分页）。
-
-**是否需要Token**: ✅ 是
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 0 | 页码 |
-| size | int | 否 | 20 | 每页数量 |
-| type | string | 否 | - | 活动类型（观影团/影评征集/线下活动） |
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "content": [
-      {
-        "id": 1,
-        "title": "《星际穿越》IMAX重映观影团",
-        "description": "一起去看IMAX版星际穿越！",
-        "imageUrl": "https://example.com/event.jpg",
-        "eventDate": "2026-03-15T19:30:00",
-        "location": "北京国际影城IMAX厅",
-        "participants": 58,
-        "maxParticipants": 80,
-        "type": "观影团",
-        "createdAt": "2026-02-28T10:00:00"
-      }
-    ],
-    "totalElements": 20,
-    "totalPages": 1
-  }
-}
-```
-
----
-
-#### GET /api/events/{eventId}
-
-获取活动详情。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### POST /api/events
-
-创建活动。
-
-**是否需要Token**: ✅ 是
-
-**请求体**:
-```json
-{
-  "title": "《星际穿越》IMAX重映观影团",
-  "description": "一起去看IMAX版星际穿越！",
-  "imageUrl": "https://example.com/event.jpg",
-  "eventDate": "2026-03-15T19:30:00",
-  "location": "北京国际影城IMAX厅",
-  "maxParticipants": 80,
-  "type": "观影团"
-}
-```
-
----
-
-#### PUT /api/events/{eventId}
-
-更新活动（只能更新自己创建的）。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### DELETE /api/events/{eventId}
-
-删除活动（只能删除自己创建的）。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### POST /api/events/{eventId}/join
-
-参加活动。
-
-**是否需要Token**: ✅ 是
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "参加成功",
-  "data": {
-    "joined": true,
-    "participants": 59
-  }
-}
-```
-
----
-
-#### DELETE /api/events/{eventId}/join
-
-取消参加。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### GET /api/events/{eventId}/participants
-
-获取活动参与者列表。
-
-**是否需要Token**: ✅ 是
-
----
-
-### 6. 电影接口
+### 2. 评论接口
 
 #### GET /api/movies
 
@@ -2175,6 +2439,8 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 | 4003 | 已经参加过了 | 参加活动接口 |
 | 4004 | 还未参加 | 取消参加接口 |
 | 4005 | 无权限操作此活动 | 活动相关接口 |
+| 4006 | 活动已满员 | 参加活动接口 |
+| 4007 | 已经参加过该活动 | 参加活动接口 |
 | 5001 | 评论不存在 | 评论相关接口 |
 | 5002 | 无权限操作此评论 | 评论相关接口 |
 | 6001 | 不能关注自己 | 关注接口 |
@@ -2195,20 +2461,20 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 7. ✅ 看过记录管理（标记/取消/更新/查询）
 8. ✅ TMDB电影数据查询（搜索/热门/详情/推荐等9个接口）
 9. ✅ 图片上传功能
-10. ⏳ 发布动态
-11. ⏳ 获取动态列表
-12. ⏳ 点赞动态
-13. ⏳ 评论动态
+10. ✅ 活动管理（创建/查看/更新/删除/参加/取消参加等11个接口）
+11. ⏳ 发布动态
+12. ⏳ 获取动态列表
+13. ⏳ 点赞动态
+14. ⏳ 评论动态
 
 ### 中优先级（重要功能）⭐⭐
-14. ⏳ 获取动态详情
-15. ⏳ 删除动态
-16. ⏳ 删除评论
-17. ⏳ 获取用户动态列表
-18. ⏳ 获取收藏列表
+15. ⏳ 获取动态详情
+16. ⏳ 删除动态
+17. ⏳ 删除评论
+18. ⏳ 获取用户动态列表
+19. ⏳ 获取收藏列表
 
 ### 低优先级（辅助功能）⭐
-19. ⏳ 活动相关接口
 20. ⏳ 点赞评论
 21. ⏳ 获取电影动态列表
 
@@ -2217,6 +2483,23 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 ## 更新日志
 
 ### 2026-03-04
+- ✅ 实现活动管理完整功能（11个接口）
+  - POST /api/events - 创建活动
+  - GET /api/events - 获取活动列表（支持筛选和搜索）
+  - GET /api/events/{eventId} - 获取活动详情
+  - PUT /api/events/{eventId} - 更新活动
+  - DELETE /api/events/{eventId} - 删除活动
+  - POST /api/events/{eventId}/join - 参加活动
+  - DELETE /api/events/{eventId}/join - 取消参加
+  - GET /api/events/{eventId}/participants - 获取参与者列表
+  - GET /api/events/{eventId}/joined - 检查是否已参加
+  - GET /api/events/user/{userId}/created - 获取用户创建的活动
+  - GET /api/events/user/{userId}/joined - 获取用户参加的活动
+- ✅ 创建活动相关实体类（Event、EventParticipant）
+- ✅ 实现活动状态管理（UPCOMING/ONGOING/ENDED）
+- ✅ 实现活动分类功能
+- ✅ 实现活动搜索功能
+- ✅ 实现活动参与人数管理
 - ✅ 实现图片上传接口
   - POST /api/upload/image - 上传图片
   - GET /uploads/{filename} - 访问图片

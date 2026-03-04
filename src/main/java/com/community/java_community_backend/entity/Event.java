@@ -11,8 +11,14 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 活动实体类
+ */
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+    @Index(name = "idx_event_date", columnList = "event_date"),
+    @Index(name = "idx_movie_id", columnList = "movie_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -39,7 +45,7 @@ public class Event {
     private Integer participants = 0;
     
     @Column(nullable = false)
-    private Integer maxParticipants;
+    private Integer maxParticipants = 100;
     
     @Column(nullable = false, length = 50)
     private String type;
@@ -59,10 +65,6 @@ public class Event {
     private LocalDateTime updatedAt;
     
     // 关系映射
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventParticipant> eventParticipants;
-    
-    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
-    private List<Feed> feeds;
 }
-
