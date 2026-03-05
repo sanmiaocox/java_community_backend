@@ -1065,7 +1065,7 @@ Authorization: Bearer {token}
 
 #### GET /api/watched/check/{movieId}
 
-检查用户是否看过某部电影。
+检查用户是否看过某部电影（根据本地ID）。
 
 **是否需要Token**: ✅ 是
 
@@ -1077,7 +1077,7 @@ Authorization: Bearer {token}
 **路径参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| movieId | long | 是 | 电影ID |
+| movieId | long | 是 | 本地数据库电影ID |
 
 **响应示例**:
 ```json
@@ -1089,6 +1089,53 @@ Authorization: Bearer {token}
   }
 }
 ```
+
+**使用场景**:
+- 当已知本地电影ID时使用
+- 用于收藏夹、活动等场景
+
+---
+
+#### GET /api/watched/check/tmdb/{tmdbId}
+
+检查用户是否看过某部电影（根据TMDB ID）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**请求示例**:
+```bash
+GET /api/watched/check/tmdb/20982
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "isWatched": true
+  }
+}
+```
+
+**使用场景**:
+- 前端从TMDB获取电影信息后，使用TMDB ID检查看过状态
+- 避免需要先查询本地电影ID的额外步骤
+- **推荐使用此接口**，因为前端通常只有TMDB ID
+
+**重要说明**:
+- 如果电影不存在于本地数据库，返回 `isWatched: false`
+- 只有当电影已保存到本地且用户标记为看过时，才返回 `isWatched: true`
 
 ---
 
@@ -1805,6 +1852,164 @@ Content-Type: application/json
 - 如果TMDB API调用失败，会返回500错误
 - 保存的电影信息包括标题、海报、评分、类型、地区等基本信息
 - 导演和演员信息需要单独调用TMDB演职人员接口获取
+
+---
+
+#### GET /api/movies/{movieId}
+
+获取本地电影详情（根据本地ID）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| movieId | long | 是 | 本地电影ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "tmdbId": 157336,
+    "title": "星际穿越",
+    "originalTitle": "Interstellar",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    "rating": 8.4,
+    "ratingSource": "TMDB",
+    "releaseDate": "2014-11-07",
+    "year": "2014",
+    "genres": "科幻,剧情,冒险",
+    "genre": "科幻",
+    "region": "美国,英国,加拿大",
+    "languages": "英语",
+    "directors": null,
+    "actors": null,
+    "synopsis": "随着地球自然环境的恶化，人类面临着无法生存的威胁...",
+    "tmdbUrl": "https://www.themoviedb.org/movie/157336",
+    "createdAt": "2026-03-05T10:00:00",
+    "updatedAt": "2026-03-05T10:00:00"
+  }
+}
+```
+
+---
+
+#### GET /api/movies/tmdb/{tmdbId}
+
+获取本地电影详情（根据TMDB ID）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**响应示例**: 同上
+
+**使用场景**:
+- 前端已知TMDB ID，需要获取本地电影详情
+- 检查电影是否已保存到本地数据库
+
+---
+
+#### GET /api/movies
+
+获取本地电影列表（分页）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "tmdbId": 157336,
+        "title": "星际穿越",
+        "originalTitle": "Interstellar",
+        "posterUrl": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+        "rating": 8.4,
+        "ratingSource": "TMDB",
+        "releaseDate": "2014-11-07",
+        "year": "2014",
+        "genres": "科幻,剧情,冒险",
+        "genre": "科幻",
+        "region": "美国,英国,加拿大",
+        "languages": "英语",
+        "directors": null,
+        "actors": null,
+        "synopsis": "随着地球自然环境的恶化，人类面临着无法生存的威胁...",
+        "tmdbUrl": "https://www.themoviedb.org/movie/157336",
+        "createdAt": "2026-03-05T10:00:00",
+        "updatedAt": "2026-03-05T10:00:00"
+      }
+    ],
+    "totalElements": 100,
+    "totalPages": 5,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### GET /api/movies/search
+
+搜索本地电影。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| keyword | string | 是 | - | 搜索关键词（标题、导演、演员） |
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**请求示例**:
+```bash
+GET /api/movies/search?keyword=星际穿越&page=0&size=20
+```
+
+**响应示例**: 同获取电影列表
+
+**使用场景**:
+- 在本地数据库中搜索已保存的电影
+- 支持按标题、导演、演员搜索
 
 ---
 
@@ -2682,12 +2887,40 @@ Authorization: Bearer {token}
 
 ## 更新日志
 
-### 2026-03-05
+### 2026-03-06
+- ✅ 修复看过记录检查接口的TMDB ID问题
+  - 新增 GET /api/watched/check/tmdb/{tmdbId} - 根据TMDB ID检查看过状态
+  - 保留 GET /api/watched/check/{movieId} - 根据本地ID检查看过状态
+  - 解决前端使用TMDB ID检查时返回错误结果的问题
 - ✅ 实现电影管理接口
+  - GET /api/movies/{movieId} - 获取本地电影详情（根据本地ID）
+  - GET /api/movies/tmdb/{tmdbId} - 获取本地电影详情（根据TMDB ID）
+  - GET /api/movies - 获取本地电影列表（分页）
+  - GET /api/movies/search - 搜索本地电影
+- ✅ 活动参与表添加联系信息字段
+  - participant_phone - 参与人手机号（必填）
+  - participant_nickname - 参与人昵称（必填）
+  - participant_wechat - 参与人微信号（选填）
+  - participant_qq - 参与人QQ号（选填）
+  - 修改参加活动接口，需要提供联系信息
+
+### 2026-03-05
+- ✅ 实现电影保存接口
   - POST /api/movies/save - 保存电影到数据库
   - 自动检查tmdbId是否重复，避免重复写入
   - 从TMDB获取电影详细信息并保存到本地
   - 返回完整的电影信息（包括本地ID）
+- ✅ 活动表添加新字段
+  - creator_id - 创建人ID（外键关联users表）
+  - registration_deadline - 报名截止时间
+  - end_time - 活动结束时间
+  - movie_tmdb_id - 电影TMDB ID
+  - registration_notice - 报名须知
+- ✅ 实现活动创建人权限控制
+  - 只有创建人可以修改和删除活动
+  - 响应中包含isCreator字段，标识当前用户是否是创建人
+- ✅ 实现报名截止时间控制
+  - 过期后不能再参加活动
 
 ### 2026-03-04
 - ✅ 实现活动管理完整功能（11个接口）

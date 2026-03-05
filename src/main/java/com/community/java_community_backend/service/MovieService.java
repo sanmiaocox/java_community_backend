@@ -180,5 +180,17 @@ public class MovieService {
     public boolean existsByTmdbId(Integer tmdbId) {
         return movieRepository.existsByTmdbId(tmdbId);
     }
+    
+    /**
+     * 搜索本地电影
+     * 
+     * @param keyword 搜索关键词
+     * @param page 页码
+     * @param size 每页数量
+     * @return 电影分页数据
+     */
+    public Page<Movie> searchMovies(String keyword, int page, int size) {
+        return movieRepository.searchMovies(keyword, PageRequest.of(page, size));
+    }
 }
 

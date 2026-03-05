@@ -73,7 +73,7 @@ public class WatchedMovieController {
     }
     
     /**
-     * 检查用户是否看过某部电影
+     * 检查用户是否看过某部电影（根据本地ID）
      */
     @GetMapping("/check/{movieId}")
     public ResponseEntity<ApiResponse<Map<String, Boolean>>> checkWatched(
@@ -81,6 +81,18 @@ public class WatchedMovieController {
             @PathVariable Long movieId) {
         Long userId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
         boolean isWatched = watchedMovieService.isWatched(userId, movieId);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("isWatched", isWatched)));
+    }
+    
+    /**
+     * 检查用户是否看过某部电影（根据TMDB ID）
+     */
+    @GetMapping("/check/tmdb/{tmdbId}")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> checkWatchedByTmdbId(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Integer tmdbId) {
+        Long userId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        boolean isWatched = watchedMovieService.isWatchedByTmdbId(userId, tmdbId);
         return ResponseEntity.ok(ApiResponse.success(Map.of("isWatched", isWatched)));
     }
     

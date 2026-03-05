@@ -50,6 +50,74 @@ public class MovieController {
     }
     
     /**
+     * 获取本地电影详情
+     */
+    @GetMapping("/{movieId}")
+    public ResponseEntity<ApiResponse<MovieResponse>> getMovie(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long movieId) {
+        // 验证用户身份
+        jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        
+        Movie movie = movieService.getLocalMovie(movieId);
+        MovieResponse response = convertToResponse(movie);
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * 根据TMDB ID获取本地电影详情
+     */
+    @GetMapping("/tmdb/{tmdbId}")
+    public ResponseEntity<ApiResponse<MovieResponse>> getMovieByTmdbId(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Integer tmdbId) {
+        // 验证用户身份
+        jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        
+        Movie movie = movieService.getLocalMovieByTmdbId(tmdbId)
+                .orElseThrow(() -> new RuntimeException("电影不存在"));
+        MovieResponse response = convertToResponse(movie);
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * 获取本地电影列表（分页）
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<MovieResponse>>> getMovies(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        // 验证用户身份
+        jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        
+        org.springframework.data.domain.Page<Movie> movies = movieService.getLocalMovies(page, size);
+        org.springframework.data.domain.Page<MovieResponse> response = movies.map(this::convertToResponse);
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * 搜索本地电影
+     */
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<org.springframework.data.domain.Page<MovieResponse>>> searchMovies(
+            @RequestHeader("Authorization") String token,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        // 验证用户身份
+        jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        
+        org.springframework.data.domain.Page<Movie> movies = movieService.searchMovies(keyword, page, size);
+        org.springframework.data.domain.Page<MovieResponse> response = movies.map(this::convertToResponse);
+        
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
      * 转换为响应DTO
      */
     private MovieResponse convertToResponse(Movie movie) {

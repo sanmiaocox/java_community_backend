@@ -107,6 +107,16 @@ public class WatchedMovieService {
     }
     
     /**
+     * 根据TMDB ID检查用户是否看过某部电影
+     */
+    public boolean isWatchedByTmdbId(Long userId, Integer tmdbId) {
+        // 先查找本地电影
+        return movieRepository.findByTmdbId(tmdbId)
+                .map(movie -> watchedMovieRepository.existsByUserIdAndMovieId(userId, movie.getId()))
+                .orElse(false);
+    }
+    
+    /**
      * 获取用户看过的电影数量
      */
     public long getUserWatchedCount(Long userId) {
