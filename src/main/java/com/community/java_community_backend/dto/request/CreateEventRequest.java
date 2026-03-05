@@ -42,6 +42,9 @@ public class CreateEventRequest {
     @Size(max = 2000, message = "活动描述不能超过2000个字符")
     private String description;
     
+    @Size(max = 2000, message = "报名须知不能超过2000个字符")
+    private String registrationNotice;
+    
     @NotNull(message = "关联电影ID不能为空")
     private Long movieId;
 }

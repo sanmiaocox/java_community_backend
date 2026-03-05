@@ -57,7 +57,9 @@ public class EventService {
         event.setMaxParticipants(request.getMaxParticipants());
         event.setType(request.getType());
         event.setDescription(request.getDescription());
+        event.setRegistrationNotice(request.getRegistrationNotice());
         event.setMovie(movie);
+        event.setMovieTmdbId(movie.getTmdbId());
         event.setCreator(creator);
         event.setParticipants(0);
         
@@ -146,10 +148,14 @@ public class EventService {
         if (request.getDescription() != null) {
             event.setDescription(request.getDescription());
         }
+        if (request.getRegistrationNotice() != null) {
+            event.setRegistrationNotice(request.getRegistrationNotice());
+        }
         if (request.getMovieId() != null) {
             Movie movie = movieRepository.findById(request.getMovieId())
                     .orElseThrow(() -> new RuntimeException("电影不存在"));
             event.setMovie(movie);
+            event.setMovieTmdbId(movie.getTmdbId());
         }
         
         Event updated = eventRepository.save(event);
@@ -176,7 +182,8 @@ public class EventService {
      * 参加活动
      */
     @Transactional
-    public void joinEvent(Long eventId, Long userId) {
+    public void joinEvent(Long eventId, Long userId, String participantPhone, String participantNickname, 
+                          String participantWechat, String participantQq) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("活动不存在"));
         
@@ -203,6 +210,10 @@ public class EventService {
         EventParticipant participant = new EventParticipant();
         participant.setEvent(event);
         participant.setUser(user);
+        participant.setParticipantPhone(participantPhone);
+        participant.setParticipantNickname(participantNickname);
+        participant.setParticipantWechat(participantWechat);
+        participant.setParticipantQq(participantQq);
         participantRepository.save(participant);
         
         // 更新参与人数
@@ -287,7 +298,9 @@ public class EventService {
                 .maxParticipants(event.getMaxParticipants())
                 .type(event.getType())
                 .description(event.getDescription())
+                .registrationNotice(event.getRegistrationNotice())
                 .movieId(movie != null ? movie.getId() : null)
+                .movieTmdbId(event.getMovieTmdbId())
                 .movieTitle(movie != null ? movie.getTitle() : null)
                 .moviePosterUrl(movie != null ? movie.getPosterUrl() : null)
                 .creatorId(creator.getId())
@@ -311,6 +324,10 @@ public class EventService {
                 .username(user.getUsername())
                 .userCode(user.getUserCode())
                 .avatar(user.getAvatar())
+                .participantPhone(participant.getParticipantPhone())
+                .participantNickname(participant.getParticipantNickname())
+                .participantWechat(participant.getParticipantWechat())
+                .participantQq(participant.getParticipantQq())
                 .joinedAt(participant.getJoinedAt())
                 .build();
     }

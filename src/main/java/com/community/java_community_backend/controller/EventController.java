@@ -1,6 +1,7 @@
 package com.community.java_community_backend.controller;
 
 import com.community.java_community_backend.dto.request.CreateEventRequest;
+import com.community.java_community_backend.dto.request.JoinEventRequest;
 import com.community.java_community_backend.dto.request.UpdateEventRequest;
 import com.community.java_community_backend.dto.response.ApiResponse;
 import com.community.java_community_backend.dto.response.EventParticipantResponse;
@@ -113,9 +114,12 @@ public class EventController {
     @PostMapping("/{eventId}/join")
     public ResponseEntity<ApiResponse<Map<String, Object>>> joinEvent(
             @RequestHeader("Authorization") String token,
-            @PathVariable Long eventId) {
+            @PathVariable Long eventId,
+            @Valid @RequestBody JoinEventRequest request) {
         Long userId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
-        eventService.joinEvent(eventId, userId);
+        eventService.joinEvent(eventId, userId, request.getParticipantPhone(), 
+                              request.getParticipantNickname(), request.getParticipantWechat(), 
+                              request.getParticipantQq());
         
         EventResponse event = eventService.getEventById(eventId, userId);
         Map<String, Object> result = new HashMap<>();

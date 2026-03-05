@@ -33,6 +33,9 @@ public class UpdateEventRequest {
     @Size(max = 2000, message = "活动描述不能超过2000个字符")
     private String description;
     
+    @Size(max = 2000, message = "报名须知不能超过2000个字符")
+    private String registrationNotice;
+    
     private Long movieId;
 }
 

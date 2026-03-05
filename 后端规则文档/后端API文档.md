@@ -1834,6 +1834,7 @@ Content-Type: application/json
   "maxParticipants": 80,
   "type": "观影团",
   "description": "一起去看IMAX版星际穿越！",
+  "registrationNotice": "请提前15分钟到场，携带有效身份证件。",
   "movieId": 100
 }
 ```
@@ -1850,6 +1851,7 @@ Content-Type: application/json
 | maxParticipants | int | 是 | 最大参与人数，默认100 |
 | type | string | 是 | 活动类型，如"观影团"、"影评征集"、"线下活动" |
 | description | string | 否 | 活动描述，最多2000字符 |
+| registrationNotice | string | 否 | 报名须知，最多2000字符 |
 | movieId | long | 是 | 关联的电影ID（必填） |
 
 **响应示例**:
@@ -1869,7 +1871,9 @@ Content-Type: application/json
     "maxParticipants": 80,
     "type": "观影团",
     "description": "一起去看IMAX版星际穿越！",
+    "registrationNotice": "请提前15分钟到场，携带有效身份证件。",
     "movieId": 100,
+    "movieTmdbId": 157336,
     "movieTitle": "星际穿越",
     "moviePosterUrl": "poster-abc123.jpg",
     "creatorId": 1,
@@ -1946,7 +1950,9 @@ GET /api/events?keyword=星际穿越
         "maxParticipants": 80,
         "type": "观影团",
         "description": "一起去看IMAX版星际穿越！",
+        "registrationNotice": "请提前15分钟到场，携带有效身份证件。",
         "movieId": 100,
+        "movieTmdbId": 157336,
         "movieTitle": "星际穿越",
         "moviePosterUrl": "poster-abc123.jpg",
         "creatorId": 1,
@@ -2017,6 +2023,7 @@ Content-Type: application/json
   "maxParticipants": 100,
   "type": "观影团",
   "description": "更新后的描述",
+  "registrationNotice": "更新后的报名须知",
   "movieId": 101
 }
 ```
@@ -2074,12 +2081,31 @@ Authorization: Bearer {token}
 **请求头**:
 ```
 Authorization: Bearer {token}
+Content-Type: application/json
 ```
 
 **路径参数**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | eventId | long | 是 | 活动ID |
+
+**请求体**:
+```json
+{
+  "participantPhone": "13800138001",
+  "participantNickname": "张三",
+  "participantWechat": "zhangsan_wx",
+  "participantQQ": "123456789"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| participantPhone | string | 是 | 参与人手机号（11位） |
+| participantNickname | string | 是 | 参与人昵称，最多50字符 |
+| participantWechat | string | 否 | 参与人微信号，最多50字符 |
+| participantQq | string | 否 | 参与人QQ号，最多20字符 |
 
 **响应示例**:
 ```json
@@ -2170,6 +2196,10 @@ Authorization: Bearer {token}
       "username": "影迷小李",
       "userCode": "0002",
       "avatar": "avatar-def456.jpg",
+      "participantPhone": "13800138001",
+      "participantNickname": "小李",
+      "participantWechat": "xiaoli_wx",
+      "participantQq": "123456789",
       "joinedAt": "2026-03-04T11:00:00"
     },
     {
@@ -2178,6 +2208,10 @@ Authorization: Bearer {token}
       "username": "电影达人",
       "userCode": "0003",
       "avatar": "avatar-ghi789.jpg",
+      "participantPhone": "13900139001",
+      "participantNickname": "达人",
+      "participantWechat": "daren_wx",
+      "participantQq": null,
       "joinedAt": "2026-03-04T12:00:00"
     }
   ]

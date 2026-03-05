@@ -27,7 +27,9 @@ public class EventResponse {
     private Integer maxParticipants;
     private String type;
     private String description;
+    private String registrationNotice;
     private Long movieId;
+    private Integer movieTmdbId;
     private String movieTitle;
     private String moviePosterUrl;
     private Long creatorId;

@@ -38,6 +38,18 @@ public class EventParticipant {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
+    @Column(nullable = false, length = 11)
+    private String participantPhone;
+    
+    @Column(nullable = false, length = 50)
+    private String participantNickname;
+    
+    @Column(length = 50)
+    private String participantWechat;
+    
+    @Column(length = 20)
+    private String participantQq;
+    
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime joinedAt;

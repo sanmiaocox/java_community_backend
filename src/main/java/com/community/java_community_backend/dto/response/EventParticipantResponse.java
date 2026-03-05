@@ -21,6 +21,10 @@ public class EventParticipantResponse {
     private String username;
     private String userCode;
     private String avatar;
+    private String participantPhone;
+    private String participantNickname;
+    private String participantWechat;
+    private String participantQq;
     private LocalDateTime joinedAt;
 }
 

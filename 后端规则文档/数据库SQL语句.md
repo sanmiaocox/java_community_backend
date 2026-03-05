@@ -392,7 +392,9 @@ CREATE TABLE IF NOT EXISTS events (
     max_participants INT NOT NULL COMMENT '最大人数',
     type VARCHAR(50) NOT NULL COMMENT '活动类型',
     description TEXT DEFAULT NULL COMMENT '活动描述',
+    registration_notice TEXT DEFAULT NULL COMMENT '报名须知',
     movie_id BIGINT DEFAULT NULL COMMENT '关联电影ID',
+    movie_tmdb_id INT DEFAULT NULL COMMENT '电影TMDB ID',
     creator_id BIGINT NOT NULL COMMENT '创建人ID',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -427,6 +429,16 @@ ALTER TABLE events
 ADD COLUMN end_time DATETIME NULL COMMENT '活动结束时间' 
 AFTER registration_deadline;
 
+-- 添加电影TMDB ID字段
+ALTER TABLE events 
+ADD COLUMN movie_tmdb_id INT NULL COMMENT '电影TMDB ID' 
+AFTER movie_id;
+
+-- 添加报名须知字段
+ALTER TABLE events 
+ADD COLUMN registration_notice TEXT NULL COMMENT '报名须知' 
+AFTER description;
+
 -- 添加外键约束
 ALTER TABLE events 
 ADD CONSTRAINT fk_events_creator 
@@ -443,6 +455,8 @@ CREATE INDEX idx_end_time ON events(end_time);
 - `creator_id`: 活动创建人，用于区分"我创建的"和"我参与的"活动
 - `registration_deadline`: 报名截止时间，过期后不能再参加活动
 - `end_time`: 活动结束时间，用于筛选历史活动
+- `movie_tmdb_id`: 电影的TMDB ID，方便前端直接使用
+- `registration_notice`: 报名须知，告知参与者注意事项
 
 **注意事项**:
 1. 如果events表中已有数据，需要先为现有数据设置creator_id
@@ -450,7 +464,13 @@ CREATE INDEX idx_end_time ON events(end_time);
    ```sql
    UPDATE events SET creator_id = 1 WHERE creator_id IS NULL;
    ```
-3. 建议在执行前备份数据库
+3. 如果已有活动关联了电影，可以同步更新movie_tmdb_id：
+   ```sql
+   UPDATE events e 
+   INNER JOIN movies m ON e.movie_id = m.id 
+   SET e.movie_tmdb_id = m.tmdb_id;
+   ```
+4. 建议在执行前备份数据库
 
 ---
 
@@ -464,6 +484,10 @@ CREATE TABLE IF NOT EXISTS event_participants (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '参与ID',
     event_id BIGINT NOT NULL COMMENT '活动ID',
     user_id BIGINT NOT NULL COMMENT '用户ID',
+    participant_phone VARCHAR(11) NOT NULL COMMENT '参与人手机号',
+    participant_nickname VARCHAR(50) NOT NULL COMMENT '参与人昵称',
+    participant_wechat VARCHAR(50) DEFAULT NULL COMMENT '参与人微信号',
+    participant_qq VARCHAR(20) DEFAULT NULL COMMENT '参与人QQ号',
     joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '参与时间',
     UNIQUE KEY uk_event_user (event_id, user_id) COMMENT '活动-用户唯一索引',
     INDEX idx_user_id (user_id),
@@ -777,9 +801,18 @@ AND EXISTS (
 - ✅ 活动表 `events` 添加创建人字段 `creator_id`（外键关联users表）
 - ✅ 活动表 `events` 添加报名截止时间字段 `registration_deadline`
 - ✅ 活动表 `events` 添加活动结束时间字段 `end_time`
+- ✅ 活动表 `events` 添加电影TMDB ID字段 `movie_tmdb_id`
+- ✅ 活动表 `events` 添加报名须知字段 `registration_notice`
+- ✅ 活动参与表 `event_participants` 添加参与人手机号字段 `participant_phone`
+- ✅ 活动参与表 `event_participants` 添加参与人昵称字段 `participant_nickname`
+- ✅ 活动参与表 `event_participants` 添加参与人微信号字段 `participant_wechat`
+- ✅ 活动参与表 `event_participants` 添加参与人QQ号字段 `participant_qq`
 - ✅ 添加相关索引和外键约束
 - ✅ 支持区分"我创建的活动"和"我参与的活动"
 - ✅ 支持报名截止时间控制
+- ✅ 前端可直接使用TMDB ID
+- ✅ 支持报名须知说明
+- ✅ 支持收集参与者联系方式
 
 ### 2026-03-01
 - ✅ 创建收藏夹表 `collections`（支持片单、混合收藏夹、看过系统收藏夹）
