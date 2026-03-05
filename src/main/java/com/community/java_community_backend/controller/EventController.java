@@ -184,5 +184,20 @@ public class EventController {
         Page<EventResponse> events = eventService.getUserJoinedEvents(userId, currentUserId, pageable);
         return ResponseEntity.ok(ApiResponse.success(events));
     }
+    
+    /**
+     * 获取用户创建的活动
+     */
+    @GetMapping("/user/{userId}/created")
+    public ResponseEntity<ApiResponse<Page<EventResponse>>> getUserCreatedEvents(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long currentUserId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        Pageable pageable = PageRequest.of(page, size);
+        Page<EventResponse> events = eventService.getUserCreatedEvents(userId, currentUserId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(events));
+    }
 }
 

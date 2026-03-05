@@ -384,23 +384,73 @@ CREATE TABLE IF NOT EXISTS events (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '活动ID',
     title VARCHAR(200) NOT NULL COMMENT '活动标题',
     image_url VARCHAR(500) DEFAULT NULL COMMENT '活动图片',
-    event_date DATETIME NOT NULL COMMENT '活动时间',
+    event_date DATETIME NOT NULL COMMENT '活动开始时间',
+    registration_deadline DATETIME DEFAULT NULL COMMENT '报名截止时间',
+    end_time DATETIME DEFAULT NULL COMMENT '活动结束时间',
     location VARCHAR(200) NOT NULL COMMENT '活动地点',
     participants INT NOT NULL DEFAULT 0 COMMENT '参与人数',
     max_participants INT NOT NULL COMMENT '最大人数',
     type VARCHAR(50) NOT NULL COMMENT '活动类型',
     description TEXT DEFAULT NULL COMMENT '活动描述',
     movie_id BIGINT DEFAULT NULL COMMENT '关联电影ID',
+    creator_id BIGINT NOT NULL COMMENT '创建人ID',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_event_date (event_date),
     INDEX idx_movie_id (movie_id),
-    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE SET NULL
+    INDEX idx_creator_id (creator_id),
+    INDEX idx_registration_deadline (registration_deadline),
+    INDEX idx_end_time (end_time),
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE SET NULL,
+    FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='活动表';
 ```
 
 **执行时间**: 2026-02-27  
 **说明**: 存储线下活动信息
+
+### 如果表已存在，添加字段
+
+```sql
+-- 添加创建人字段（外键关联users表）
+ALTER TABLE events 
+ADD COLUMN creator_id BIGINT NOT NULL COMMENT '创建人ID' 
+AFTER movie_id;
+
+-- 添加报名截止时间字段
+ALTER TABLE events 
+ADD COLUMN registration_deadline DATETIME NULL COMMENT '报名截止时间' 
+AFTER event_date;
+
+-- 添加活动结束时间字段
+ALTER TABLE events 
+ADD COLUMN end_time DATETIME NULL COMMENT '活动结束时间' 
+AFTER registration_deadline;
+
+-- 添加外键约束
+ALTER TABLE events 
+ADD CONSTRAINT fk_events_creator 
+FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE;
+
+-- 添加索引以提高查询性能
+CREATE INDEX idx_creator_id ON events(creator_id);
+CREATE INDEX idx_registration_deadline ON events(registration_deadline);
+CREATE INDEX idx_end_time ON events(end_time);
+```
+
+**执行时间**: 2026-03-05  
+**说明**: 
+- `creator_id`: 活动创建人，用于区分"我创建的"和"我参与的"活动
+- `registration_deadline`: 报名截止时间，过期后不能再参加活动
+- `end_time`: 活动结束时间，用于筛选历史活动
+
+**注意事项**:
+1. 如果events表中已有数据，需要先为现有数据设置creator_id
+2. 可以使用以下语句将现有活动的创建人设置为某个默认用户：
+   ```sql
+   UPDATE events SET creator_id = 1 WHERE creator_id IS NULL;
+   ```
+3. 建议在执行前备份数据库
 
 ---
 
@@ -722,6 +772,14 @@ AND EXISTS (
 ---
 
 ## 更新日志
+
+### 2026-03-05
+- ✅ 活动表 `events` 添加创建人字段 `creator_id`（外键关联users表）
+- ✅ 活动表 `events` 添加报名截止时间字段 `registration_deadline`
+- ✅ 活动表 `events` 添加活动结束时间字段 `end_time`
+- ✅ 添加相关索引和外键约束
+- ✅ 支持区分"我创建的活动"和"我参与的活动"
+- ✅ 支持报名截止时间控制
 
 ### 2026-03-01
 - ✅ 创建收藏夹表 `collections`（支持片单、混合收藏夹、看过系统收藏夹）

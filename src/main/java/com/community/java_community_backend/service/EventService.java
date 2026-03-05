@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,9 +40,8 @@ public class EventService {
     @Transactional
     public EventResponse createEvent(Long userId, CreateEventRequest request) {
         // 验证用户存在
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("用户不存在");
-        }
+        User creator = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
         
         // 验证电影存在
         Movie movie = movieRepository.findById(request.getMovieId())
@@ -51,11 +51,14 @@ public class EventService {
         event.setTitle(request.getTitle());
         event.setImageUrl(request.getImageUrl());
         event.setEventDate(request.getEventDate());
+        event.setRegistrationDeadline(request.getRegistrationDeadline());
+        event.setEndTime(request.getEndTime());
         event.setLocation(request.getLocation());
         event.setMaxParticipants(request.getMaxParticipants());
         event.setType(request.getType());
         event.setDescription(request.getDescription());
         event.setMovie(movie);
+        event.setCreator(creator);
         event.setParticipants(0);
         
         Event saved = eventRepository.save(event);
@@ -111,6 +114,11 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("活动不存在"));
         
+        // 验证只有创建人可以修改
+        if (!event.getCreator().getId().equals(userId)) {
+            throw new RuntimeException("只有创建人可以修改活动");
+        }
+        
         if (request.getTitle() != null) {
             event.setTitle(request.getTitle());
         }
@@ -119,6 +127,12 @@ public class EventService {
         }
         if (request.getEventDate() != null) {
             event.setEventDate(request.getEventDate());
+        }
+        if (request.getRegistrationDeadline() != null) {
+            event.setRegistrationDeadline(request.getRegistrationDeadline());
+        }
+        if (request.getEndTime() != null) {
+            event.setEndTime(request.getEndTime());
         }
         if (request.getLocation() != null) {
             event.setLocation(request.getLocation());
@@ -150,6 +164,11 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("活动不存在"));
         
+        // 验证只有创建人可以删除
+        if (!event.getCreator().getId().equals(userId)) {
+            throw new RuntimeException("只有创建人可以删除活动");
+        }
+        
         eventRepository.delete(event);
     }
     
@@ -167,6 +186,12 @@ public class EventService {
         // 检查是否已参加
         if (participantRepository.existsByEventIdAndUserId(eventId, userId)) {
             throw new RuntimeException("已经参加过该活动");
+        }
+        
+        // 检查报名截止时间
+        if (event.getRegistrationDeadline() != null && 
+            LocalDateTime.now().isAfter(event.getRegistrationDeadline())) {
+            throw new RuntimeException("报名已截止");
         }
         
         // 检查是否已满员
@@ -226,6 +251,14 @@ public class EventService {
     }
     
     /**
+     * 获取用户创建的活动
+     */
+    public Page<EventResponse> getUserCreatedEvents(Long userId, Long currentUserId, Pageable pageable) {
+        Page<Event> events = eventRepository.findByCreatorIdOrderByCreatedAtDesc(userId, pageable);
+        return events.map(event -> convertToResponse(event, currentUserId));
+    }
+    
+    /**
      * 检查用户是否已参加活动
      */
     public boolean isUserJoined(Long eventId, Long userId) {
@@ -237,14 +270,18 @@ public class EventService {
      */
     private EventResponse convertToResponse(Event event, Long currentUserId) {
         boolean isParticipant = participantRepository.existsByEventIdAndUserId(event.getId(), currentUserId);
+        boolean isCreator = event.getCreator().getId().equals(currentUserId);
         
         Movie movie = event.getMovie();
+        User creator = event.getCreator();
         
         return EventResponse.builder()
                 .id(event.getId())
                 .title(event.getTitle())
                 .imageUrl(event.getImageUrl())
                 .eventDate(event.getEventDate())
+                .registrationDeadline(event.getRegistrationDeadline())
+                .endTime(event.getEndTime())
                 .location(event.getLocation())
                 .participants(event.getParticipants())
                 .maxParticipants(event.getMaxParticipants())
@@ -253,9 +290,13 @@ public class EventService {
                 .movieId(movie != null ? movie.getId() : null)
                 .movieTitle(movie != null ? movie.getTitle() : null)
                 .moviePosterUrl(movie != null ? movie.getPosterUrl() : null)
+                .creatorId(creator.getId())
+                .creatorUsername(creator.getUsername())
+                .creatorAvatar(creator.getAvatar())
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
                 .isParticipant(isParticipant)
+                .isCreator(isCreator)
                 .build();
     }
     

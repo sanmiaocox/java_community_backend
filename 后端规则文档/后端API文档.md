@@ -20,7 +20,8 @@
    - [看过记录接口](#7-看过记录接口)
    - [TMDB电影数据接口](#8-tmdb电影数据接口)
    - [文件上传接口](#9-文件上传接口)
-   - [活动管理接口](#10-活动管理接口)
+   - [电影管理接口](#10-电影管理接口)
+   - [活动管理接口](#11-活动管理接口)
 4. [待实现接口](#待实现接口)
 5. [错误码说明](#错误码说明)
 
@@ -1713,7 +1714,101 @@ GET http://localhost:7070/uploads/abc123-def456-789.jpg
 
 ---
 
-### 10. 活动管理接口
+### 10. 电影管理接口
+
+#### POST /api/movies/save
+
+保存电影到数据库。
+
+从TMDB获取电影信息并保存到本地数据库。如果电影已存在（根据tmdbId判断），则直接返回已存在的电影信息，不会重复写入。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "tmdbId": 157336
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| tmdbId | int | 是 | TMDB电影ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "电影保存成功",
+  "data": {
+    "id": 1,
+    "tmdbId": 157336,
+    "title": "星际穿越",
+    "originalTitle": "Interstellar",
+    "posterUrl": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    "rating": 8.4,
+    "ratingSource": "TMDB",
+    "releaseDate": "2014-11-07",
+    "year": "2014",
+    "genres": "科幻,剧情,冒险",
+    "genre": "科幻",
+    "region": "美国,英国,加拿大",
+    "languages": "英语",
+    "directors": null,
+    "actors": null,
+    "synopsis": "随着地球自然环境的恶化，人类面临着无法生存的威胁...",
+    "tmdbUrl": "https://www.themoviedb.org/movie/157336",
+    "createdAt": "2026-03-05T10:00:00",
+    "updatedAt": "2026-03-05T10:00:00"
+  }
+}
+```
+
+**如果电影已存在**:
+```json
+{
+  "code": 200,
+  "message": "电影已存在",
+  "data": {
+    "id": 1,
+    "tmdbId": 157336,
+    "title": "星际穿越",
+    ...
+  }
+}
+```
+
+**错误响应**:
+```json
+{
+  "code": 500,
+  "message": "无法从TMDB获取电影信息: tmdbId=999999",
+  "data": null
+}
+```
+
+**使用场景**:
+- 用户在创建活动前，需要先保存电影到数据库
+- 用户收藏电影时，自动调用此接口保存电影
+- 用户标记看过电影时，自动调用此接口保存电影
+- 前端从TMDB搜索到电影后，需要保存到本地数据库才能使用
+
+**注意事项**:
+- 接口会自动检查电影是否已存在（根据tmdbId），避免重复写入
+- 如果TMDB API调用失败，会返回500错误
+- 保存的电影信息包括标题、海报、评分、类型、地区等基本信息
+- 导演和演员信息需要单独调用TMDB演职人员接口获取
+
+---
+
+### 11. 活动管理接口
 
 #### POST /api/events
 
@@ -1733,11 +1828,13 @@ Content-Type: application/json
   "title": "《星际穿越》IMAX重映观影团",
   "imageUrl": "event-cover-abc123.jpg",
   "eventDate": "2026-03-15T19:30:00",
+  "registrationDeadline": "2026-03-14T23:59:59",
+  "endTime": "2026-03-15T22:00:00",
   "location": "北京国际影城IMAX厅",
   "maxParticipants": 80,
   "type": "观影团",
   "description": "一起去看IMAX版星际穿越！",
-  "movieId": 000000
+  "movieId": 100
 }
 ```
 
@@ -1746,7 +1843,9 @@ Content-Type: application/json
 |------|------|------|------|
 | title | string | 是 | 活动标题，最多200字符 |
 | imageUrl | string | 否 | 活动封面图片文件名 |
-| eventDate | datetime | 是 | 活动时间，必须是未来时间 |
+| eventDate | datetime | 是 | 活动开始时间，必须是未来时间 |
+| registrationDeadline | datetime | 否 | 报名截止时间，过期后不能再参加 |
+| endTime | datetime | 否 | 活动结束时间 |
 | location | string | 是 | 活动地点，最多200字符 |
 | maxParticipants | int | 是 | 最大参与人数，默认100 |
 | type | string | 是 | 活动类型，如"观影团"、"影评征集"、"线下活动" |
@@ -1763,6 +1862,8 @@ Content-Type: application/json
     "title": "《星际穿越》IMAX重映观影团",
     "imageUrl": "event-cover-abc123.jpg",
     "eventDate": "2026-03-15T19:30:00",
+    "registrationDeadline": "2026-03-14T23:59:59",
+    "endTime": "2026-03-15T22:00:00",
     "location": "北京国际影城IMAX厅",
     "participants": 0,
     "maxParticipants": 80,
@@ -1771,9 +1872,13 @@ Content-Type: application/json
     "movieId": 100,
     "movieTitle": "星际穿越",
     "moviePosterUrl": "poster-abc123.jpg",
+    "creatorId": 1,
+    "creatorUsername": "电影爱好者",
+    "creatorAvatar": "avatar-abc123.jpg",
     "createdAt": "2026-03-04T10:00:00",
     "updatedAt": "2026-03-04T10:00:00",
-    "isParticipant": false
+    "isParticipant": false,
+    "isCreator": true
   }
 }
 ```
@@ -1781,6 +1886,9 @@ Content-Type: application/json
 **注意**: 
 - 活动必须关联一个电影
 - 响应中会包含关联电影的基本信息（标题、海报）
+- 响应中会包含创建人信息（ID、用户名、头像）
+- `isCreator` 表示当前用户是否是活动创建人
+- `isParticipant` 表示当前用户是否已参加活动
 
 ---
 
@@ -1831,6 +1939,8 @@ GET /api/events?keyword=星际穿越
         "title": "《星际穿越》IMAX重映观影团",
         "imageUrl": "event-cover-abc123.jpg",
         "eventDate": "2026-03-15T19:30:00",
+        "registrationDeadline": "2026-03-14T23:59:59",
+        "endTime": "2026-03-15T22:00:00",
         "location": "北京国际影城IMAX厅",
         "participants": 58,
         "maxParticipants": 80,
@@ -1839,9 +1949,13 @@ GET /api/events?keyword=星际穿越
         "movieId": 100,
         "movieTitle": "星际穿越",
         "moviePosterUrl": "poster-abc123.jpg",
+        "creatorId": 1,
+        "creatorUsername": "电影爱好者",
+        "creatorAvatar": "avatar-abc123.jpg",
         "createdAt": "2026-03-04T10:00:00",
         "updatedAt": "2026-03-04T10:00:00",
-        "isParticipant": true
+        "isParticipant": true,
+        "isCreator": false
       }
     ],
     "totalElements": 100,
@@ -1876,7 +1990,7 @@ Authorization: Bearer {token}
 
 #### PUT /api/events/{eventId}
 
-更新活动（只能更新自己创建的活动）。
+更新活动（只有创建人可以修改）。
 
 **是否需要Token**: ✅ 是
 
@@ -1897,11 +2011,20 @@ Content-Type: application/json
   "title": "更新后的标题",
   "imageUrl": "new-cover-abc123.jpg",
   "eventDate": "2026-03-16T19:30:00",
+  "registrationDeadline": "2026-03-15T23:59:59",
+  "endTime": "2026-03-16T22:00:00",
   "location": "新的地点",
   "maxParticipants": 100,
   "type": "观影团",
   "description": "更新后的描述",
   "movieId": 101
+}
+```
+
+**注意**: 
+- 所有字段都是可选的，只更新提供的字段
+- 只有活动创建人可以修改活动
+- 如果不是创建人，会返回错误：`只有创建人可以修改活动`
 }
 ```
 
@@ -1913,7 +2036,7 @@ Content-Type: application/json
 
 #### DELETE /api/events/{eventId}
 
-删除活动（只能删除自己创建的活动）。
+删除活动（只有创建人可以删除）。
 
 **是否需要Token**: ✅ 是
 
@@ -1935,6 +2058,10 @@ Authorization: Bearer {token}
   "data": null
 }
 ```
+
+**注意**: 
+- 只有活动创建人可以删除活动
+- 如果不是创建人，会返回错误：`只有创建人可以删除活动`
 
 ---
 
@@ -1971,6 +2098,14 @@ Authorization: Bearer {token}
 {
   "code": 400,
   "message": "活动已满员",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 400,
+  "message": "报名已截止",
   "data": null
 }
 ```
@@ -2103,6 +2238,37 @@ Authorization: Bearer {token}
 | size | int | 否 | 20 | 每页数量 |
 
 **响应示例**: 同获取活动列表
+
+---
+
+#### GET /api/events/user/{userId}/created
+
+获取用户创建的活动列表。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| userId | long | 是 | 用户ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**: 同获取活动列表
+
+**使用场景**:
+- 查看某个用户创建的所有活动
+- 在个人主页展示"我创建的活动"
+- 区分"我创建的"和"我参与的"活动
 
 ---
 
@@ -2481,6 +2647,13 @@ Authorization: Bearer {token}
 ---
 
 ## 更新日志
+
+### 2026-03-05
+- ✅ 实现电影管理接口
+  - POST /api/movies/save - 保存电影到数据库
+  - 自动检查tmdbId是否重复，避免重复写入
+  - 从TMDB获取电影详细信息并保存到本地
+  - 返回完整的电影信息（包括本地ID）
 
 ### 2026-03-04
 - ✅ 实现活动管理完整功能（11个接口）

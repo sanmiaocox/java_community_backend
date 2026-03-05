@@ -57,6 +57,16 @@ public class Event {
     @JoinColumn(name = "movie_id")
     private Movie movie;
     
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creator_id", nullable = false)
+    private User creator;
+    
+    @Column(name = "registration_deadline")
+    private LocalDateTime registrationDeadline;
+    
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+    
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

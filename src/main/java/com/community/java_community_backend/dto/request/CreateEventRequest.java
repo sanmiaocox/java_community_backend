@@ -24,6 +24,10 @@ public class CreateEventRequest {
     @Future(message = "活动时间必须是未来时间")
     private LocalDateTime eventDate;
     
+    private LocalDateTime registrationDeadline;
+    
+    private LocalDateTime endTime;
+    
     @NotBlank(message = "活动地点不能为空")
     @Size(max = 200, message = "活动地点不能超过200个字符")
     private String location;

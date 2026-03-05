@@ -18,6 +18,10 @@ public class UpdateEventRequest {
     
     private LocalDateTime eventDate;
     
+    private LocalDateTime registrationDeadline;
+    
+    private LocalDateTime endTime;
+    
     @Size(max = 200, message = "活动地点不能超过200个字符")
     private String location;
     

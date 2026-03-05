@@ -23,4 +23,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // 搜索活动（标题或描述包含关键词）
     @Query("SELECT e FROM Event e WHERE e.title LIKE %:keyword% OR e.description LIKE %:keyword% ORDER BY e.createdAt DESC")
     Page<Event> searchEvents(@Param("keyword") String keyword, Pageable pageable);
+    
+    // 根据创建人ID查询活动
+    Page<Event> findByCreatorIdOrderByCreatedAtDesc(Long creatorId, Pageable pageable);
 }

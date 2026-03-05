@@ -20,6 +20,8 @@ public class EventResponse {
     private String title;
     private String imageUrl;
     private LocalDateTime eventDate;
+    private LocalDateTime registrationDeadline;
+    private LocalDateTime endTime;
     private String location;
     private Integer participants;
     private Integer maxParticipants;
@@ -28,8 +30,12 @@ public class EventResponse {
     private Long movieId;
     private String movieTitle;
     private String moviePosterUrl;
+    private Long creatorId;
+    private String creatorUsername;
+    private String creatorAvatar;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean isParticipant; // 当前用户是否已参加
+    private Boolean isCreator; // 当前用户是否是创建人
 }
 
