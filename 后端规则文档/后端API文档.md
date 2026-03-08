@@ -1588,6 +1588,209 @@ GET /api/tmdb/movie/157336/recommendations?page=1
 
 ---
 
+#### GET /api/tmdb/discover/movie
+
+发现电影（高级筛选）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| language | string | 否 | zh-CN | 语言代码 |
+| sort_by | string | 否 | - | 排序方式，如 popularity.desc, vote_average.desc, release_date.desc |
+| with_genres | string | 否 | - | 类型ID，多个用逗号分隔，如 28,12（动作+冒险） |
+| primary_release_year | int | 否 | - | 上映年份 |
+| vote_average.gte | double | 否 | - | 最低评分（0.0-10.0） |
+| vote_average.lte | double | 否 | - | 最高评分（0.0-10.0） |
+| page | int | 否 | 1 | 页码 |
+
+**常用排序方式**:
+- `popularity.desc` - 按人气降序
+- `popularity.asc` - 按人气升序
+- `vote_average.desc` - 按评分降序
+- `vote_average.asc` - 按评分升序
+- `release_date.desc` - 按上映日期降序
+- `release_date.asc` - 按上映日期升序
+
+**请求示例**:
+```bash
+# 筛选2024年上映的动作片，评分7分以上，按人气排序
+GET /api/tmdb/discover/movie?sort_by=popularity.desc&with_genres=28&primary_release_year=2024&vote_average.gte=7.0&page=1
+
+# 筛选科幻+冒险类型，评分8-10分
+GET /api/tmdb/discover/movie?with_genres=878,12&vote_average.gte=8.0&vote_average.lte=10.0&page=1
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "page": 1,
+    "results": [
+      {
+        "id": 157336,
+        "title": "星际穿越",
+        "original_title": "Interstellar",
+        "overview": "在不远的未来，随着地球自然环境的恶化...",
+        "poster_path": "/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+        "backdrop_path": "/xu9zaAevzQ5nnrsXN6JcahLnG4i.jpg",
+        "release_date": "2014-11-05",
+        "vote_average": 8.4,
+        "vote_count": 32000,
+        "popularity": 150.5,
+        "genre_ids": [878, 18, 12]
+      }
+    ],
+    "total_pages": 50,
+    "total_results": 1000
+  }
+}
+```
+
+**使用场景**:
+- 高级筛选功能
+- 按类型、年份、评分等条件筛选电影
+- 发现符合特定条件的电影
+
+---
+
+#### GET /api/tmdb/genre/movie/list
+
+获取电影类型列表。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| language | string | 否 | zh-CN | 语言代码 |
+
+**请求示例**:
+```bash
+GET /api/tmdb/genre/movie/list?language=zh-CN
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "genres": [
+      {
+        "id": 28,
+        "name": "动作"
+      },
+      {
+        "id": 12,
+        "name": "冒险"
+      },
+      {
+        "id": 16,
+        "name": "动画"
+      },
+      {
+        "id": 35,
+        "name": "喜剧"
+      },
+      {
+        "id": 80,
+        "name": "犯罪"
+      },
+      {
+        "id": 99,
+        "name": "纪录"
+      },
+      {
+        "id": 18,
+        "name": "剧情"
+      },
+      {
+        "id": 10751,
+        "name": "家庭"
+      },
+      {
+        "id": 14,
+        "name": "奇幻"
+      },
+      {
+        "id": 36,
+        "name": "历史"
+      },
+      {
+        "id": 27,
+        "name": "恐怖"
+      },
+      {
+        "id": 10402,
+        "name": "音乐"
+      },
+      {
+        "id": 9648,
+        "name": "悬疑"
+      },
+      {
+        "id": 10749,
+        "name": "爱情"
+      },
+      {
+        "id": 878,
+        "name": "科幻"
+      },
+      {
+        "id": 10770,
+        "name": "电视电影"
+      },
+      {
+        "id": 53,
+        "name": "惊悚"
+      },
+      {
+        "id": 10752,
+        "name": "战争"
+      },
+      {
+        "id": 37,
+        "name": "西部"
+      }
+    ]
+  }
+}
+```
+
+**使用场景**:
+- 筛选器的类型选择下拉框
+- 显示电影类型标签
+- 配合 discover 接口进行类型筛选
+
+**常用类型ID**:
+- 28 - 动作
+- 12 - 冒险
+- 16 - 动画
+- 35 - 喜剧
+- 80 - 犯罪
+- 18 - 剧情
+- 14 - 奇幻
+- 27 - 恐怖
+- 10749 - 爱情
+- 878 - 科幻
+- 53 - 惊悚
+
+---
+
 ### 9. 文件上传接口
 
 #### POST /api/upload/image
@@ -2886,6 +3089,14 @@ Authorization: Bearer {token}
 ---
 
 ## 更新日志
+
+### 2026-03-08
+- ✅ 实现电影搜索高级筛选接口
+  - GET /api/tmdb/discover/movie - 发现电影（支持按类型、年份、评分等多条件筛选）
+  - GET /api/tmdb/genre/movie/list - 获取电影类型列表
+  - 支持按人气、评分、上映日期等多种方式排序
+  - 支持多类型组合筛选
+  - 支持评分区间筛选
 
 ### 2026-03-06
 - ✅ 修复看过记录检查接口的TMDB ID问题

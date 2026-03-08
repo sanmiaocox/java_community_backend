@@ -162,5 +162,42 @@ public class TmdbController {
         }
         return ApiResponse.error("获取推荐电影失败");
     }
+    
+    /**
+     * 发现电影（高级筛选）
+     * GET /api/tmdb/discover/movie?language=zh-CN&sort_by=popularity.desc&with_genres=28,12&primary_release_year=2024&vote_average.gte=7.0&vote_average.lte=10.0&page=1
+     */
+    @GetMapping("/discover/movie")
+    public ApiResponse<Object> discoverMovies(
+            @RequestParam(required = false) String language,
+            @RequestParam(name = "sort_by", required = false) String sortBy,
+            @RequestParam(name = "with_genres", required = false) String withGenres,
+            @RequestParam(name = "primary_release_year", required = false) Integer primaryReleaseYear,
+            @RequestParam(name = "vote_average.gte", required = false) Double voteAverageGte,
+            @RequestParam(name = "vote_average.lte", required = false) Double voteAverageLte,
+            @RequestParam(defaultValue = "1") int page) {
+        JsonNode result = tmdbService.discoverMovies(language, sortBy, withGenres, 
+                primaryReleaseYear, voteAverageGte, voteAverageLte, page);
+        if (result != null) {
+            Map<String, Object> data = objectMapper.convertValue(result, Map.class);
+            return ApiResponse.success(data);
+        }
+        return ApiResponse.error("发现电影失败");
+    }
+    
+    /**
+     * 获取电影类型列表
+     * GET /api/tmdb/genre/movie/list?language=zh-CN
+     */
+    @GetMapping("/genre/movie/list")
+    public ApiResponse<Object> getMovieGenres(
+            @RequestParam(required = false) String language) {
+        JsonNode result = tmdbService.getMovieGenres(language);
+        if (result != null) {
+            Map<String, Object> data = objectMapper.convertValue(result, Map.class);
+            return ApiResponse.success(data);
+        }
+        return ApiResponse.error("获取电影类型列表失败");
+    }
 }
 

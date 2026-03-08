@@ -114,5 +114,65 @@ public class TmdbService {
             baseUrl, movieId, page);
         return executeRequest(url);
     }
+    
+    /**
+     * 发现电影（高级筛选）
+     * @param language 语言代码
+     * @param sortBy 排序方式，如 popularity.desc
+     * @param withGenres 类型ID，如 28,12（动作+冒险）
+     * @param primaryReleaseYear 上映年份
+     * @param voteAverageGte 最低评分
+     * @param voteAverageLte 最高评分
+     * @param page 页码
+     */
+    public JsonNode discoverMovies(String language, String sortBy, String withGenres, 
+                                   Integer primaryReleaseYear, Double voteAverageGte, 
+                                   Double voteAverageLte, int page) {
+        StringBuilder urlBuilder = new StringBuilder(String.format("%s/discover/movie?page=%d", baseUrl, page));
+        
+        // 添加语言参数，默认中文
+        if (language != null && !language.isEmpty()) {
+            urlBuilder.append("&language=").append(language);
+        } else {
+            urlBuilder.append("&language=zh-CN");
+        }
+        
+        // 添加排序参数
+        if (sortBy != null && !sortBy.isEmpty()) {
+            urlBuilder.append("&sort_by=").append(sortBy);
+        }
+        
+        // 添加类型筛选
+        if (withGenres != null && !withGenres.isEmpty()) {
+            urlBuilder.append("&with_genres=").append(withGenres);
+        }
+        
+        // 添加上映年份
+        if (primaryReleaseYear != null) {
+            urlBuilder.append("&primary_release_year=").append(primaryReleaseYear);
+        }
+        
+        // 添加最低评分
+        if (voteAverageGte != null) {
+            urlBuilder.append("&vote_average.gte=").append(voteAverageGte);
+        }
+        
+        // 添加最高评分
+        if (voteAverageLte != null) {
+            urlBuilder.append("&vote_average.lte=").append(voteAverageLte);
+        }
+        
+        return executeRequest(urlBuilder.toString());
+    }
+    
+    /**
+     * 获取电影类型列表
+     * @param language 语言代码
+     */
+    public JsonNode getMovieGenres(String language) {
+        String url = String.format("%s/genre/movie/list?language=%s", 
+            baseUrl, language != null && !language.isEmpty() ? language : "zh-CN");
+        return executeRequest(url);
+    }
 }
 
