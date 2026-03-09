@@ -38,8 +38,8 @@ public class Feed {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     
-    @Column
-    private Double rating;
+    @Column(columnDefinition = "TEXT")
+    private String images;
     
     @Column(nullable = false)
     private Integer likeCount = 0;
@@ -58,10 +58,7 @@ public class Feed {
     private LocalDateTime updatedAt;
     
     // 关系映射
-    @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
-    
-    @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL)
-    private List<Like> likes;
 }
 

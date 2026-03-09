@@ -6,6 +6,571 @@
 
 ---
 
+### 12. 动态管理接口
+
+#### POST /api/feeds
+
+发布动态。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "content": "刚看完这部科幻大片，视觉效果太震撼了！",
+  "images": ["img1.jpg", "img2.jpg"],
+  "movieId": 100,
+  "eventId": null
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | string | 是 | 动态内容，最多2000字符 |
+| images | array | 否 | 图片文件名数组，最多4张 |
+| movieId | long | 否 | 关联电影ID（本地数据库ID，不是tmdbId） |
+| eventId | long | 否 | 关联活动ID |
+
+**注意**：
+- movieId是本地数据库的电影ID，不是tmdbId
+- 前端需要先调用 POST /api/movies/save 保存电影到本地数据库
+- 然后使用返回的本地ID发布动态
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "发布成功",
+  "data": {
+    "id": 1,
+    "user": {
+      "id": 1,
+      "userCode": "0001",
+      "username": "电影爱好者",
+      "avatar": "avatar.jpg"
+    },
+    "movie": {
+      "id": 100,
+      "tmdbId": 157336,
+      "title": "星际穿越",
+      "posterUrl": "poster.jpg",
+      "rating": 8.4
+    },
+    "event": null,
+    "content": "刚看完这部科幻大片，视觉效果太震撼了！",
+    "images": ["img1.jpg", "img2.jpg"],
+    "likeCount": 0,
+    "commentCount": 0,
+    "isLiked": false,
+    "createdAt": "2026-03-09T10:00:00",
+    "updatedAt": "2026-03-09T10:00:00"
+  }
+}
+```
+
+---
+
+#### GET /api/feeds
+
+获取动态列表（关注人的动态）。
+
+**是否需要Token**: ✅ 是
+
+**功能说明**：
+- 显示当前用户关注的人发布的动态
+- 如果用户没有关注任何人，返回空列表
+- 按发布时间倒序排列
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**请求示例**:
+```bash
+GET /api/feeds?page=0&size=20
+```
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "user": {
+          "id": 2,
+          "userCode": "0002",
+          "username": "影迷小李",
+          "avatar": "avatar.jpg"
+        },
+        "movie": {
+          "id": 100,
+          "tmdbId": 157336,
+          "title": "星际穿越",
+          "posterUrl": "poster.jpg",
+          "rating": 8.4
+        },
+        "event": null,
+        "content": "刚看完这部科幻大片，视觉效果太震撼了！",
+        "images": ["img1.jpg", "img2.jpg"],
+        "likeCount": 234,
+        "commentCount": 45,
+        "isLiked": true,
+        "createdAt": "2026-03-09T10:00:00",
+        "updatedAt": "2026-03-09T10:00:00"
+      }
+    ],
+    "totalElements": 100,
+    "totalPages": 5,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### GET /api/feeds/{feedId}
+
+获取动态详情。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**响应示例**: 同发布动态
+
+---
+
+#### DELETE /api/feeds/{feedId}
+
+删除动态。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**注意**：
+- 只能删除自己的动态
+- 删除动态会级联删除所有评论和点赞
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
+
+#### GET /api/users/{userId}/feeds
+
+获取用户动态列表。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| userId | long | 是 | 用户ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**: 同获取动态列表
+
+---
+
+#### GET /api/movies/{movieId}/feeds
+
+获取电影相关动态。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| movieId | long | 是 | 电影ID（本地数据库ID） |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**: 同获取动态列表
+
+---
+
+### 13. 点赞功能接口
+
+#### POST /api/feeds/{feedId}/like
+
+点赞动态。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "点赞成功",
+  "data": {
+    "isLiked": true,
+    "likeCount": 235
+  }
+}
+```
+
+---
+
+#### DELETE /api/feeds/{feedId}/like
+
+取消点赞动态。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "取消点赞成功",
+  "data": {
+    "isLiked": false,
+    "likeCount": 234
+  }
+}
+```
+
+---
+
+#### GET /api/feeds/{feedId}/like/status
+
+检查是否点赞动态。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "isLiked": true,
+    "likeCount": 235
+  }
+}
+```
+
+---
+
+#### POST /api/comments/{commentId}/like
+
+点赞评论。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| commentId | long | 是 | 评论ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "点赞成功",
+  "data": {
+    "isLiked": true,
+    "likeCount": 24
+  }
+}
+```
+
+---
+
+#### DELETE /api/comments/{commentId}/like
+
+取消点赞评论。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| commentId | long | 是 | 评论ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "取消点赞成功",
+  "data": {
+    "isLiked": false,
+    "likeCount": 23
+  }
+}
+```
+
+---
+
+#### GET /api/comments/{commentId}/like/status
+
+检查是否点赞评论。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| commentId | long | 是 | 评论ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "isLiked": true,
+    "likeCount": 24
+  }
+}
+```
+
+---
+
+### 14. 评论功能接口
+
+#### POST /api/feeds/{feedId}/comments
+
+发表评论。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**请求体**:
+```json
+{
+  "content": "我也超级喜欢这部电影！"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| content | string | 是 | 评论内容，最多500字符 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "评论成功",
+  "data": {
+    "id": 1,
+    "user": {
+      "id": 2,
+      "userCode": "0002",
+      "username": "影迷小李",
+      "avatar": "avatar.jpg"
+    },
+    "content": "我也超级喜欢这部电影！",
+    "likeCount": 0,
+    "isLiked": false,
+    "createdAt": "2026-03-09T11:00:00",
+    "updatedAt": "2026-03-09T11:00:00"
+  }
+}
+```
+
+---
+
+#### GET /api/feeds/{feedId}/comments
+
+获取动态的评论列表。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| feedId | long | 是 | 动态ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "user": {
+          "id": 2,
+          "userCode": "0002",
+          "username": "影迷小李",
+          "avatar": "avatar.jpg"
+        },
+        "content": "我也超级喜欢这部电影！",
+        "likeCount": 23,
+        "isLiked": true,
+        "createdAt": "2026-03-09T11:00:00",
+        "updatedAt": "2026-03-09T11:00:00"
+      }
+    ],
+    "totalElements": 45,
+    "totalPages": 3,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### DELETE /api/comments/{commentId}
+
+删除评论。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| commentId | long | 是 | 评论ID |
+
+**注意**：
+- 只能删除自己的评论
+- 删除评论会同时删除该评论的所有点赞
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "删除成功",
+  "data": null
+}
+```
+
+---
+
 ## 📋 目录
 
 1. [接口规范](#接口规范)
@@ -22,6 +587,9 @@
    - [文件上传接口](#9-文件上传接口)
    - [电影管理接口](#10-电影管理接口)
    - [活动管理接口](#11-活动管理接口)
+   - [动态管理接口](#12-动态管理接口)
+   - [点赞功能接口](#13-点赞功能接口)
+   - [评论功能接口](#14-评论功能接口)
 4. [待实现接口](#待实现接口)
 5. [错误码说明](#错误码说明)
 
@@ -2716,308 +3284,9 @@ Authorization: Bearer {token}
 
 ## 待实现接口
 
-### 1. 动态接口
+### 1. 其他功能
 
-#### GET /api/feeds
-
-获取动态列表（分页）。
-
-**是否需要Token**: ✅ 是
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "content": [
-      {
-        "id": 1,
-        "user": {
-          "id": 1,
-          "userCode": "0001",
-          "username": "电影爱好者",
-          "avatar": "https://example.com/avatar.jpg"
-        },
-        "movie": {
-          "id": 1,
-          "title": "星际穿越",
-          "posterUrl": "https://example.com/poster.jpg"
-        },
-        "event": null,
-        "content": "刚看完这部科幻大片，视觉效果太震撼了！",
-        "images": ["https://example.com/img1.jpg"],
-        "rating": 9.3,
-        "likeCount": 234,
-        "shareCount": 23,
-        "commentCount": 45,
-        "createdAt": "2026-02-28T10:00:00"
-      }
-    ],
-    "totalElements": 100,
-    "totalPages": 5,
-    "size": 20,
-    "number": 0
-  }
-}
-```
-
----
-
-#### POST /api/feeds
-
-发布动态。
-
-**是否需要Token**: ✅ 是
-
-**请求体**:
-```json
-{
-  "movieId": 1,
-  "eventId": null,
-  "content": "这部电影太棒了！",
-  "images": ["https://example.com/img1.jpg"],
-  "rating": 9.5
-}
-```
-
-**说明**：movieId和eventId至少填一个，也可以都不填（纯文字动态）
-
----
-
-#### GET /api/feeds/{feedId}
-
-获取动态详情。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### PUT /api/feeds/{feedId}
-
-更新动态。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### DELETE /api/feeds/{feedId}
-
-删除动态（只能删除自己的）。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### GET /api/users/{userId}/feeds
-
-获取指定用户的动态列表。
-
-**是否需要Token**: ✅ 是
-
----
-
-### 2. 评论接口
-
-#### GET /api/feeds/{feedId}/comments
-
-获取动态的评论列表。
-
-**是否需要Token**: ✅ 是
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": [
-    {
-      "id": 1,
-      "user": {
-        "id": 2,
-        "userCode": "0002",
-        "username": "影迷小李",
-        "avatar": "https://example.com/avatar.jpg"
-      },
-      "content": "我也超级喜欢这部电影！",
-      "likeCount": 23,
-      "createdAt": "2026-02-28T11:00:00"
-    }
-  ]
-}
-```
-
----
-
-#### POST /api/feeds/{feedId}/comments
-
-发表评论。
-
-**是否需要Token**: ✅ 是
-
-**请求体**:
-```json
-{
-  "content": "我也超级喜欢这部电影！"
-}
-```
-
----
-
-#### DELETE /api/comments/{commentId}
-
-删除评论（只能删除自己的）。
-
-**是否需要Token**: ✅ 是
-
----
-
-### 3. 点赞接口
-
-#### POST /api/feeds/{feedId}/like
-
-点赞动态。
-
-**是否需要Token**: ✅ 是
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "点赞成功",
-  "data": {
-    "liked": true,
-    "likeCount": 235
-  }
-}
-```
-
----
-
-#### DELETE /api/feeds/{feedId}/like
-
-取消点赞。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### POST /api/comments/{commentId}/like
-
-点赞评论。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### DELETE /api/comments/{commentId}/like
-
-取消点赞评论。
-
-**是否需要Token**: ✅ 是
-
----
-
-### 4. 收藏接口
-
-#### GET /api/favorites
-
-获取我的收藏列表（分页）。
-
-**是否需要Token**: ✅ 是
-
-**请求参数**:
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| page | int | 否 | 0 | 页码 |
-| size | int | 否 | 20 | 每页数量 |
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "content": [
-      {
-        "id": 1,
-        "movie": {
-          "id": 1,
-          "title": "星际穿越",
-          "posterUrl": "https://example.com/poster.jpg",
-          "rating": 9.3
-        },
-        "createdAt": "2026-02-28T10:00:00"
-      }
-    ],
-    "totalElements": 50,
-    "totalPages": 3
-  }
-}
-```
-
----
-
-#### POST /api/movies/{movieId}/favorite
-
-收藏电影。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### DELETE /api/movies/{movieId}/favorite
-
-取消收藏。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### GET /api/movies/{movieId}/favorite/status
-
-检查是否已收藏。
-
-**是否需要Token**: ✅ 是
-
-**响应示例**:
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "favorited": true
-  }
-}
-```
-
----
-
-### 2. 评论接口
-
-#### GET /api/movies
-
-获取本地电影列表（分页）。
-
-**是否需要Token**: ✅ 是
-
-**说明**：返回数据库中已保存的电影（用户发布过动态的电影）
-
----
-
-#### GET /api/movies/{movieId}
-
-获取本地电影详情。
-
-**是否需要Token**: ✅ 是
-
----
-
-#### GET /api/movies/{movieId}/feeds
-
-获取某电影的所有动态。
-
-**是否需要Token**: ✅ 是
+暂无待实现接口，核心功能已全部完成。
 
 ---
 
@@ -3089,6 +3358,34 @@ Authorization: Bearer {token}
 ---
 
 ## 更新日志
+
+### 2026-03-09
+- ✅ 实现动态管理完整功能（6个接口）
+  - POST /api/feeds - 发布动态
+  - GET /api/feeds - 获取动态列表（关注人的动态）
+  - GET /api/feeds/{feedId} - 获取动态详情
+  - DELETE /api/feeds/{feedId} - 删除动态
+  - GET /api/users/{userId}/feeds - 获取用户动态列表
+  - GET /api/movies/{movieId}/feeds - 获取电影相关动态
+- ✅ 实现点赞功能（6个接口）
+  - POST /api/feeds/{feedId}/like - 点赞动态
+  - DELETE /api/feeds/{feedId}/like - 取消点赞动态
+  - GET /api/feeds/{feedId}/like/status - 检查是否点赞动态
+  - POST /api/comments/{commentId}/like - 点赞评论
+  - DELETE /api/comments/{commentId}/like - 取消点赞评论
+  - GET /api/comments/{commentId}/like/status - 检查是否点赞评论
+- ✅ 实现评论功能（3个接口）
+  - POST /api/feeds/{feedId}/comments - 发表评论
+  - GET /api/feeds/{feedId}/comments - 获取评论列表
+  - DELETE /api/comments/{commentId} - 删除评论
+- ✅ 数据库改造
+  - 动态表添加images字段（支持最多4张图片）
+  - 重建点赞表（支持动态和评论点赞）
+- ✅ 核心功能特性
+  - 首页动态流显示关注人的动态
+  - 支持关联电影和活动
+  - 批量查询点赞状态优化性能
+  - 级联删除保证数据一致性
 
 ### 2026-03-08
 - ✅ 实现电影搜索高级筛选接口

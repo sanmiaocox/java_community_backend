@@ -25,12 +25,20 @@ public class Like {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "feed_id", nullable = false)
-    private Feed feed;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_type", nullable = false)
+    private TargetType targetType;
+    
+    @Column(name = "target_id", nullable = false)
+    private Long targetId;
     
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+    
+    public enum TargetType {
+        FEED,
+        COMMENT
+    }
 }
 

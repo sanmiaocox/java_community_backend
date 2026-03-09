@@ -164,6 +164,18 @@ CREATE TABLE IF NOT EXISTS feeds (
 **执行时间**: 2026-02-27  
 **说明**: 存储用户发布的动态，可以关联电影、活动，或两者都关联，或都不关联
 
+### 如果表已存在，添加images字段
+
+```sql
+-- 为动态表添加图片字段
+ALTER TABLE feeds 
+ADD COLUMN images TEXT DEFAULT NULL COMMENT '动态图片（JSON数组，最多4张）' 
+AFTER content;
+```
+
+**执行时间**: 2026-03-09  
+**说明**: 添加图片字段，支持最多4张图片，以JSON数组格式存储文件名
+
 ---
 
 ## 评论表（comments）
@@ -213,6 +225,32 @@ CREATE TABLE IF NOT EXISTS likes (
 
 **执行时间**: 2026-02-27  
 **说明**: 存储用户对动态的点赞记录，防止重复点赞
+
+### 重建点赞表（支持动态和评论点赞）
+
+```sql
+-- 删除旧表
+DROP TABLE IF EXISTS likes;
+
+-- 创建新表（支持动态和评论点赞）
+CREATE TABLE likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '点赞ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    target_type ENUM('FEED', 'COMMENT') NOT NULL COMMENT '点赞目标类型',
+    target_id BIGINT NOT NULL COMMENT '目标ID（动态ID或评论ID）',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_user_target (user_id, target_type, target_id) COMMENT '用户-目标唯一索引',
+    INDEX idx_target (target_type, target_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='点赞表';
+```
+
+**执行时间**: 2026-03-09  
+**说明**: 
+- 重建点赞表，支持动态和评论两种点赞类型
+- 使用 `target_type` 和 `target_id` 统一管理点赞
+- 不再使用 `feed_id` 字段，改用更灵活的设计
+- **注意**: 此操作会删除旧的点赞数据，请在执行前备份
 
 ---
 
@@ -796,6 +834,18 @@ AND EXISTS (
 ---
 
 ## 更新日志
+
+### 2026-03-09
+- ✅ 动态表 `feeds` 添加图片字段 `images`（支持最多4张图片）
+- ✅ 重建点赞表 `likes`（支持动态和评论点赞）
+  - 使用 `target_type` 和 `target_id` 统一管理点赞
+  - 支持 FEED（动态）和 COMMENT（评论）两种类型
+  - 移除 `feed_id` 字段，改用更灵活的设计
+- ✅ 实现动态功能完整接口（15个接口）
+  - 动态管理：发布、查看、删除动态
+  - 点赞功能：点赞/取消点赞动态和评论
+  - 评论功能：发表、查看、删除评论
+- ✅ 首页动态流显示关注人的动态
 
 ### 2026-03-05
 - ✅ 活动表 `events` 添加创建人字段 `creator_id`（外键关联users表）

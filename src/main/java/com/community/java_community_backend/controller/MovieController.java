@@ -2,12 +2,17 @@ package com.community.java_community_backend.controller;
 
 import com.community.java_community_backend.dto.request.SaveMovieRequest;
 import com.community.java_community_backend.dto.response.ApiResponse;
+import com.community.java_community_backend.dto.response.FeedResponse;
 import com.community.java_community_backend.dto.response.MovieResponse;
 import com.community.java_community_backend.entity.Movie;
+import com.community.java_community_backend.service.FeedService;
 import com.community.java_community_backend.service.MovieService;
 import com.community.java_community_backend.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class MovieController {
     
     private final MovieService movieService;
+    private final FeedService feedService;
     private final JwtUtil jwtUtil;
     
     /**
@@ -115,6 +121,22 @@ public class MovieController {
         org.springframework.data.domain.Page<MovieResponse> response = movies.map(this::convertToResponse);
         
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * 获取电影相关动态
+     * GET /api/movies/{movieId}/feeds?page=0&size=20
+     */
+    @GetMapping("/{movieId}/feeds")
+    public ResponseEntity<ApiResponse<Page<FeedResponse>>> getMovieFeeds(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long movieId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long currentUserId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        Pageable pageable = PageRequest.of(page, size);
+        Page<FeedResponse> feeds = feedService.getMovieFeeds(movieId, currentUserId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(feeds));
     }
     
     /**

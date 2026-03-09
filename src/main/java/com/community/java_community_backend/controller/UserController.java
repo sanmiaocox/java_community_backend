@@ -2,11 +2,16 @@ package com.community.java_community_backend.controller;
 
 import com.community.java_community_backend.dto.request.UpdateProfileRequest;
 import com.community.java_community_backend.dto.response.ApiResponse;
+import com.community.java_community_backend.dto.response.FeedResponse;
 import com.community.java_community_backend.dto.response.UserInfoResponse;
+import com.community.java_community_backend.service.FeedService;
 import com.community.java_community_backend.service.UserService;
 import com.community.java_community_backend.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     
     private final UserService userService;
+    private final FeedService feedService;
     private final JwtUtil jwtUtil;
     
     /**
@@ -52,6 +58,22 @@ public class UserController {
     public ApiResponse<UserInfoResponse> getUserById(@PathVariable Long userId) {
         UserInfoResponse user = userService.getUserById(userId);
         return ApiResponse.success("获取成功", user);
+    }
+    
+    /**
+     * 获取用户动态列表
+     * GET /api/users/{userId}/feeds?page=0&size=20
+     */
+    @GetMapping("/{userId}/feeds")
+    public ApiResponse<Page<FeedResponse>> getUserFeeds(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Long currentUserId = jwtUtil.getUserIdFromToken(token.replace("Bearer ", ""));
+        Pageable pageable = PageRequest.of(page, size);
+        Page<FeedResponse> feeds = feedService.getUserFeeds(userId, currentUserId, pageable);
+        return ApiResponse.success(feeds);
     }
 }
 
