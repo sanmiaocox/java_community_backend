@@ -1,5 +1,7 @@
 package com.community.java_community_backend.controller;
 
+import com.community.java_community_backend.dto.request.ChangePasswordRequest;
+import com.community.java_community_backend.dto.request.ChangePhoneRequest;
 import com.community.java_community_backend.dto.request.UpdateProfileRequest;
 import com.community.java_community_backend.dto.response.ApiResponse;
 import com.community.java_community_backend.dto.response.FeedResponse;
@@ -74,6 +76,34 @@ public class UserController {
         Pageable pageable = PageRequest.of(page, size);
         Page<FeedResponse> feeds = feedService.getUserFeeds(userId, currentUserId, pageable);
         return ApiResponse.success(feeds);
+    }
+    
+    /**
+     * 修改密码
+     * PUT /api/users/password
+     */
+    @PutMapping("/password")
+    public ApiResponse<Void> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        String token = authHeader.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        userService.changePassword(userId, request);
+        return ApiResponse.success("密码修改成功", null);
+    }
+    
+    /**
+     * 修改手机号
+     * PUT /api/users/phone
+     */
+    @PutMapping("/phone")
+    public ApiResponse<Void> changePhone(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody ChangePhoneRequest request) {
+        String token = authHeader.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        userService.changePhone(userId, request);
+        return ApiResponse.success("手机号修改成功", null);
     }
 }
 

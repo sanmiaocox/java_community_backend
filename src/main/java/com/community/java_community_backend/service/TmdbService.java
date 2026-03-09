@@ -64,25 +64,25 @@ public class TmdbService {
     }
     
     public JsonNode getMovieDetails(int movieId) {
-        String url = String.format("%s/movie/%d?language=zh-CN", baseUrl, movieId);
+            String url = String.format("%s/movie/%d?language=zh-CN", baseUrl, movieId);
         return executeRequest(url);
-    }
+        }
     
     public JsonNode searchMovies(String keyword, int page) {
-        String url = String.format("%s/search/movie?query=%s&language=zh-CN&page=%d", 
-            baseUrl, keyword, page);
+            String url = String.format("%s/search/movie?query=%s&language=zh-CN&page=%d", 
+                baseUrl, keyword, page);
         return executeRequest(url);
-    }
+        }
     
     public JsonNode getMovieCredits(int movieId) {
-        String url = String.format("%s/movie/%d/credits?language=zh-CN", baseUrl, movieId);
+            String url = String.format("%s/movie/%d/credits?language=zh-CN", baseUrl, movieId);
         return executeRequest(url);
-    }
+        }
     
     public JsonNode getMovieImages(int movieId) {
-        String url = String.format("%s/movie/%d/images", baseUrl, movieId);
+            String url = String.format("%s/movie/%d/images", baseUrl, movieId);
         return executeRequest(url);
-    }
+        }
     
     public String getImageUrl(String posterPath, String size) {
         if (posterPath == null || posterPath.isEmpty()) {
@@ -92,8 +92,8 @@ public class TmdbService {
     }
     
     public JsonNode getNowPlayingMovies(int page) {
-        String url = String.format("%s/movie/now_playing?language=zh-CN&page=%d&region=CN", 
-            baseUrl, page);
+            String url = String.format("%s/movie/now_playing?language=zh-CN&page=%d&region=CN", 
+                baseUrl, page);
         return executeRequest(url);
     }
     
