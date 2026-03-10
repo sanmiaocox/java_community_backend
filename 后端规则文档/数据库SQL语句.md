@@ -4,7 +4,7 @@
 > **数据库类型**: MySQL 8.0+  
 > **字符集**: utf8mb4  
 > **排序规则**: utf8mb4_0900_ai_ci  
-> **最后更新**: 2026-02-27
+> **最后更新**: 2026-03-11
 
 ---
 
@@ -19,7 +19,12 @@
 7. [收藏表（favorites）](#收藏表favorites)
 8. [活动表（events）](#活动表events)
 9. [活动参与表（event_participants）](#活动参与表event_participants)
-10. [测试数据](#测试数据)
+10. [通知表（notifications）](#通知表notifications)
+11. [私信会话表（conversations）](#私信会话表conversations)
+12. [群聊表（group_chats）](#群聊表group_chats)
+13. [群聊成员表（group_members）](#群聊成员表group_members)
+14. [消息表（messages）](#消息表messages)
+15. [测试数据](#测试数据)
 
 ---
 
@@ -539,6 +544,148 @@ CREATE TABLE IF NOT EXISTS event_participants (
 
 ---
 
+## 通知表（notifications）
+
+### 创建表
+
+```sql
+CREATE TABLE IF NOT EXISTS notifications (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '通知ID',
+    receiver_id  BIGINT NOT NULL                   COMMENT '接收者用户ID',
+    sender_id    BIGINT DEFAULT NULL                COMMENT '触发者用户ID（系统通知为NULL）',
+    type         VARCHAR(30) NOT NULL               COMMENT '通知类型: LIKE_FEED/LIKE_COMMENT/COMMENT_FEED/FOLLOW/EVENT_JOIN/EVENT_QUIT/SYSTEM',
+    target_type  VARCHAR(20) DEFAULT NULL            COMMENT '关联对象类型: FEED/COMMENT/USER/EVENT',
+    target_id    BIGINT DEFAULT NULL                COMMENT '关联对象ID',
+    content      VARCHAR(200) DEFAULT NULL           COMMENT '通知摘要（如评论内容前50字）',
+    is_read      TINYINT(1) NOT NULL DEFAULT 0      COMMENT '是否已读 0=未读 1=已读',
+    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '通知时间',
+    INDEX idx_receiver_unread  (receiver_id, is_read),
+    INDEX idx_receiver_time    (receiver_id, created_at),
+    CONSTRAINT fk_notif_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notif_sender   FOREIGN KEY (sender_id)   REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统通知表';
+```
+
+**执行时间**: 2026-03-11  
+**说明**:  
+- `type` 枚举值：`LIKE_FEED`（点赞动态）、`LIKE_COMMENT`（点赞评论）、`COMMENT_FEED`（评论动态）、`FOLLOW`（关注）、`EVENT_JOIN`（活动报名）、`EVENT_QUIT`（退出活动）、`SYSTEM`（系统公告）
+- `sender_id` 使用 `ON DELETE SET NULL`，用户注销后通知保留，前端显示"用户已注销"
+- 自己操作自己的内容不产生通知（Service 层判断）
+
+---
+
+## 私信会话表（conversations）
+
+### 创建表
+
+```sql
+CREATE TABLE IF NOT EXISTS conversations (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '会话ID',
+    user1_id        BIGINT NOT NULL    COMMENT '用户ID（两人中ID较小的，保证唯一性）',
+    user2_id        BIGINT NOT NULL    COMMENT '用户ID（两人中ID较大的）',
+    last_message    VARCHAR(200) DEFAULT NULL COMMENT '最后一条消息摘要',
+    last_message_at DATETIME DEFAULT NULL    COMMENT '最后消息时间',
+    user1_unread    INT NOT NULL DEFAULT 0   COMMENT 'user1的未读消息数',
+    user2_unread    INT NOT NULL DEFAULT 0   COMMENT 'user2的未读消息数',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_conv_users (user1_id, user2_id),
+    INDEX idx_conv_user1 (user1_id, last_message_at),
+    INDEX idx_conv_user2 (user2_id, last_message_at),
+    CONSTRAINT fk_conv_user1 FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_conv_user2 FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='私信会话表';
+```
+
+**执行时间**: 2026-03-11  
+**说明**:  
+- `user1_id` 始终小于 `user2_id`，Service 层写入前强制 `user1Id = Math.min(A,B)`
+- 两个用户之间只存在一条会话记录，`UNIQUE KEY` 防止重复
+- 未读数分别维护，读取消息后清零对应字段
+
+---
+
+## 群聊表（group_chats）
+
+### 创建表
+
+```sql
+CREATE TABLE IF NOT EXISTS group_chats (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '群组ID',
+    name        VARCHAR(100) NOT NULL              COMMENT '群组名称',
+    avatar      VARCHAR(500) DEFAULT NULL           COMMENT '群组头像URL',
+    owner_id    BIGINT NOT NULL                    COMMENT '群主用户ID',
+    max_members INT NOT NULL DEFAULT 100            COMMENT '最大成员数',
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_group_owner (owner_id),
+    CONSTRAINT fk_group_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='群聊表';
+```
+
+**执行时间**: 2026-03-11  
+**说明**: 群主删除账号时群聊随之删除（CASCADE）
+
+---
+
+## 群聊成员表（group_members）
+
+### 创建表
+
+```sql
+CREATE TABLE IF NOT EXISTS group_members (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '记录ID',
+    group_id     BIGINT NOT NULL    COMMENT '群组ID',
+    user_id      BIGINT NOT NULL    COMMENT '成员用户ID',
+    role         VARCHAR(10) NOT NULL DEFAULT 'MEMBER' COMMENT '角色: OWNER/ADMIN/MEMBER',
+    unread_count INT NOT NULL DEFAULT 0 COMMENT '该成员在此群的未读消息数',
+    joined_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '入群时间',
+    UNIQUE KEY uk_group_member (group_id, user_id),
+    INDEX idx_gm_user (user_id),
+    CONSTRAINT fk_gm_group FOREIGN KEY (group_id) REFERENCES group_chats(id) ON DELETE CASCADE,
+    CONSTRAINT fk_gm_user  FOREIGN KEY (user_id)  REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='群聊成员表';
+```
+
+**执行时间**: 2026-03-11  
+**说明**:  
+- `role` 枚举：`OWNER`（群主）、`ADMIN`（管理员）、`MEMBER`（普通成员）
+- `unread_count` 每次发送群消息时对所有非发送者 +1，读取消息时清零
+
+---
+
+## 消息表（messages）
+
+### 创建表
+
+```sql
+CREATE TABLE IF NOT EXISTS messages (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
+    chat_type       VARCHAR(10) NOT NULL               COMMENT '聊天类型: PRIVATE/GROUP',
+    conversation_id BIGINT DEFAULT NULL                COMMENT '私信会话ID（chat_type=PRIVATE时填写）',
+    group_id        BIGINT DEFAULT NULL                COMMENT '群组ID（chat_type=GROUP时填写）',
+    sender_id       BIGINT NOT NULL                    COMMENT '发送者用户ID',
+    content         TEXT NOT NULL                      COMMENT '消息内容',
+    type            VARCHAR(20) NOT NULL DEFAULT 'TEXT' COMMENT '消息类型: TEXT/IMAGE',
+    is_recalled     TINYINT(1) NOT NULL DEFAULT 0      COMMENT '是否已撤回',
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    INDEX idx_msg_conv   (conversation_id, created_at),
+    INDEX idx_msg_group  (group_id, created_at),
+    INDEX idx_msg_sender (sender_id),
+    CONSTRAINT fk_msg_conv   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_msg_group  FOREIGN KEY (group_id)        REFERENCES group_chats(id)   ON DELETE CASCADE,
+    CONSTRAINT fk_msg_sender FOREIGN KEY (sender_id)       REFERENCES users(id)         ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息表（私聊+群聊共用）';
+```
+
+**执行时间**: 2026-03-11  
+**说明**:  
+- `chat_type=PRIVATE` 时：`conversation_id` 必填，`group_id` 为 NULL
+- `chat_type=GROUP` 时：`group_id` 必填，`conversation_id` 为 NULL
+- 撤回消息将 `is_recalled` 设为 1，内容由接口层替换为"消息已撤回"
+
+---
+
 ## 测试数据
 
 ### 插入测试用户
@@ -653,6 +800,11 @@ DESC watched_movies;
 DESC events;
 DESC event_participants;
 DESC follows;
+DESC notifications;
+DESC conversations;
+DESC group_chats;
+DESC group_members;
+DESC messages;
 ```
 
 ### 备份数据库
@@ -835,58 +987,37 @@ AND EXISTS (
 
 ## 更新日志
 
+### 2026-03-11
+- ✅ 创建消息模块5张表
+  - 通知表 `notifications`（系统通知：点赞、评论、关注、活动报名/退出）
+  - 私信会话表 `conversations`（私信会话管理，自动维护未读数）
+  - 群聊表 `group_chats`（群组信息）
+  - 群聊成员表 `group_members`（群成员管理，支持角色权限）
+  - 消息表 `messages`（私聊+群聊消息统一存储，支持撤回）
+
 ### 2026-03-09
 - ✅ 动态表 `feeds` 添加图片字段 `images`（支持最多4张图片）
 - ✅ 重建点赞表 `likes`（支持动态和评论点赞）
-  - 使用 `target_type` 和 `target_id` 统一管理点赞
-  - 支持 FEED（动态）和 COMMENT（评论）两种类型
-  - 移除 `feed_id` 字段，改用更灵活的设计
 - ✅ 实现动态功能完整接口（15个接口）
-  - 动态管理：发布、查看、删除动态
-  - 点赞功能：点赞/取消点赞动态和评论
-  - 评论功能：发表、查看、删除评论
 - ✅ 首页动态流显示关注人的动态
 
 ### 2026-03-05
-- ✅ 活动表 `events` 添加创建人字段 `creator_id`（外键关联users表）
-- ✅ 活动表 `events` 添加报名截止时间字段 `registration_deadline`
-- ✅ 活动表 `events` 添加活动结束时间字段 `end_time`
-- ✅ 活动表 `events` 添加电影TMDB ID字段 `movie_tmdb_id`
-- ✅ 活动表 `events` 添加报名须知字段 `registration_notice`
-- ✅ 活动参与表 `event_participants` 添加参与人手机号字段 `participant_phone`
-- ✅ 活动参与表 `event_participants` 添加参与人昵称字段 `participant_nickname`
-- ✅ 活动参与表 `event_participants` 添加参与人微信号字段 `participant_wechat`
-- ✅ 活动参与表 `event_participants` 添加参与人QQ号字段 `participant_qq`
-- ✅ 添加相关索引和外键约束
-- ✅ 支持区分"我创建的活动"和"我参与的活动"
-- ✅ 支持报名截止时间控制
-- ✅ 前端可直接使用TMDB ID
-- ✅ 支持报名须知说明
-- ✅ 支持收集参与者联系方式
+- ✅ 活动表 `events` 添加创建人、报名截止时间等字段
+- ✅ 活动参与表 `event_participants` 添加参与人联系方式字段
 
 ### 2026-03-01
-- ✅ 创建收藏夹表 `collections`（支持片单、混合收藏夹、看过系统收藏夹）
-- ✅ 改造收藏项表 `favorites`（支持电影和活动收藏，关联收藏夹）
-- ✅ 创建看过记录表 `watched_movies`（独立存储看过记录，支持评分和笔记）
-- ✅ 提供现有数据平滑迁移方案
+- ✅ 创建收藏夹表 `collections`
+- ✅ 改造收藏项表 `favorites`
+- ✅ 创建看过记录表 `watched_movies`
 
 ### 2026-02-28
 - ✅ 添加user_code字段（用户唯一标识）
-- ✅ 添加user_code唯一约束和索引
 - ✅ 添加bio字段（个人简介）
 - ✅ 创建关注关系表 `follows`
-- ✅ 提供现有数据迁移方案
 
 ### 2026-02-27
 - ✅ 创建数据库 `final`
-- ✅ 创建用户表 `users`
-- ✅ 创建电影表 `movies`
-- ✅ 创建动态表 `feeds`
-- ✅ 创建评论表 `comments`
-- ✅ 创建点赞表 `likes`
-- ✅ 创建收藏表 `favorites`
-- ✅ 创建活动表 `events`
-- ✅ 创建活动参与表 `event_participants`
+- ✅ 创建基础表：users、movies、feeds、comments、likes、favorites、events、event_participants
 
 ---
 

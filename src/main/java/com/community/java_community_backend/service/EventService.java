@@ -8,6 +8,7 @@ import com.community.java_community_backend.entity.Event;
 import com.community.java_community_backend.entity.EventParticipant;
 import com.community.java_community_backend.entity.Movie;
 import com.community.java_community_backend.entity.User;
+import com.community.java_community_backend.entity.Notification;
 import com.community.java_community_backend.repository.EventParticipantRepository;
 import com.community.java_community_backend.repository.EventRepository;
 import com.community.java_community_backend.repository.MovieRepository;
@@ -33,6 +34,7 @@ public class EventService {
     private final EventParticipantRepository participantRepository;
     private final UserRepository userRepository;
     private final MovieRepository movieRepository;
+    private final NotificationService notificationService;
     
     /**
      * 创建活动
@@ -219,6 +221,12 @@ public class EventService {
         // 更新参与人数
         event.setParticipants(event.getParticipants() + 1);
         eventRepository.save(event);
+
+        // 通知活动创建者（非创建者报名才通知）
+        notificationService.createNotification(
+                event.getCreator().getId(), userId,
+                Notification.NotificationType.EVENT_JOIN,
+                "EVENT", eventId, null);
     }
     
     /**
@@ -237,6 +245,12 @@ public class EventService {
         // 更新参与人数
         event.setParticipants(Math.max(0, event.getParticipants() - 1));
         eventRepository.save(event);
+
+        // 通知活动创建者（非创建者退出才通知）
+        notificationService.createNotification(
+                event.getCreator().getId(), userId,
+                Notification.NotificationType.EVENT_QUIT,
+                "EVENT", eventId, null);
     }
     
     /**

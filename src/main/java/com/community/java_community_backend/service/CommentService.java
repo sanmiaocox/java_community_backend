@@ -5,6 +5,7 @@ import com.community.java_community_backend.dto.response.CommentResponse;
 import com.community.java_community_backend.entity.Comment;
 import com.community.java_community_backend.entity.Feed;
 import com.community.java_community_backend.entity.Like;
+import com.community.java_community_backend.entity.Notification;
 import com.community.java_community_backend.entity.User;
 import com.community.java_community_backend.repository.CommentRepository;
 import com.community.java_community_backend.repository.FeedRepository;
@@ -34,6 +35,7 @@ public class CommentService {
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
+    private final NotificationService notificationService;
     
     /**
      * 发表评论
@@ -58,6 +60,15 @@ public class CommentService {
         // 更新动态评论数
         feed.setCommentCount(feed.getCommentCount() + 1);
         feedRepository.save(feed);
+
+        // 触发通知（非本人动态）
+        String preview = request.getContent().length() > 50
+                ? request.getContent().substring(0, 50) + "..."
+                : request.getContent();
+        notificationService.createNotification(
+                feed.getUser().getId(), userId,
+                Notification.NotificationType.COMMENT_FEED,
+                "FEED", feedId, preview);
         
         return convertToResponse(comment, userId);
     }

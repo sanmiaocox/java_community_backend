@@ -3,6 +3,7 @@ package com.community.java_community_backend.service;
 import com.community.java_community_backend.dto.response.FollowStatusResponse;
 import com.community.java_community_backend.dto.response.UserInfoResponse;
 import com.community.java_community_backend.entity.Follow;
+import com.community.java_community_backend.entity.Notification;
 import com.community.java_community_backend.entity.User;
 import com.community.java_community_backend.exception.BusinessException;
 import com.community.java_community_backend.repository.FollowRepository;
@@ -29,6 +30,7 @@ public class FollowService {
     
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     /**
      * 关注用户
@@ -55,7 +57,13 @@ public class FollowService {
         follow.setFollowerId(followerId);
         follow.setFollowingId(followingId);
         followRepository.save(follow);
-        
+
+        // 触发通知
+        notificationService.createNotification(
+                followingId, followerId,
+                Notification.NotificationType.FOLLOW,
+                "USER", followingId, null);
+
         log.info("用户{}关注了用户{}", followerId, followingId);
     }
     

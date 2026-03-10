@@ -4,6 +4,7 @@ import com.community.java_community_backend.dto.response.LikeStatusResponse;
 import com.community.java_community_backend.entity.Comment;
 import com.community.java_community_backend.entity.Feed;
 import com.community.java_community_backend.entity.Like;
+import com.community.java_community_backend.entity.Notification;
 import com.community.java_community_backend.entity.User;
 import com.community.java_community_backend.repository.CommentRepository;
 import com.community.java_community_backend.repository.FeedRepository;
@@ -26,6 +27,7 @@ public class LikeService {
     private final UserRepository userRepository;
     private final FeedRepository feedRepository;
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
     
     /**
      * 点赞动态
@@ -55,6 +57,12 @@ public class LikeService {
         // 更新动态点赞数
         feed.setLikeCount(feed.getLikeCount() + 1);
         feedRepository.save(feed);
+
+        // 触发通知（非本人动态）
+        notificationService.createNotification(
+                feed.getUser().getId(), userId,
+                Notification.NotificationType.LIKE_FEED,
+                "FEED", feedId, null);
         
         return LikeStatusResponse.builder()
                 .isLiked(true)
@@ -135,6 +143,12 @@ public class LikeService {
         // 更新评论点赞数
         comment.setLikeCount(comment.getLikeCount() + 1);
         commentRepository.save(comment);
+
+        // 触发通知（非本人评论）
+        notificationService.createNotification(
+                comment.getUser().getId(), userId,
+                Notification.NotificationType.LIKE_COMMENT,
+                "COMMENT", commentId, null);
         
         return LikeStatusResponse.builder()
                 .isLiked(true)

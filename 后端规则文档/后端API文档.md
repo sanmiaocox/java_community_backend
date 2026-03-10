@@ -1,6 +1,6 @@
 # 电影交流社区后端API文档
 
-> **最后更新**: 2026-02-28  
+> **最后更新**: 2026-03-11  
 > **基础URL**: 本机url`http://localhost:7070`  安卓虚拟机url‘http://10.0.2.2:7070’
 > **API版本**: v1.0
 
@@ -166,7 +166,35 @@ Authorization: Bearer {token}
 
 ---
 
-#### DELETE /api/feeds/{feedId}
+#### DELETE /api/messages/groups/{groupId}
+
+解散群聊（仅群主可操作，删除后群聊消息全部清除）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+## 待实现接口
+
+暂无待实现接口，核心功能已全部完成。
+
+---
+
+/api/feeds/{feedId}
 
 删除动态。
 
@@ -595,6 +623,8 @@ Authorization: Bearer {token}
    - [动态管理接口](#12-动态管理接口)
    - [点赞功能接口](#13-点赞功能接口)
    - [评论功能接口](#14-评论功能接口)
+   - [通知接口](#15-通知接口)
+   - [消息接口（私聊+群聊）](#16-消息接口私聊群聊)
 4. [待实现接口](#待实现接口)
 5. [错误码说明](#错误码说明)
 
@@ -3414,11 +3444,538 @@ Authorization: Bearer {token}
 
 ---
 
-## 待实现接口
+### 15. 通知接口
 
-### 1. 其他功能
+#### GET /api/notifications
 
-暂无待实现接口，核心功能已全部完成。
+查询当前用户所有通知（分页，含已读未读）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "type": "LIKE_FEED",
+        "sender": {
+          "id": 2,
+          "username": "影迷小李",
+          "avatar": "avatar.jpg"
+        },
+        "targetType": "FEED",
+        "targetId": 10,
+        "content": null,
+        "isRead": false,
+        "createdAt": "2026-03-11T10:00:00"
+      },
+      {
+        "id": 2,
+        "type": "COMMENT_FEED",
+        "sender": {
+          "id": 3,
+          "username": "电影达人",
+          "avatar": "avatar2.jpg"
+        },
+        "targetType": "FEED",
+        "targetId": 10,
+        "content": "我也超级喜欢这部电影！...",
+        "isRead": true,
+        "createdAt": "2026-03-11T09:00:00"
+      }
+    ],
+    "totalElements": 50,
+    "totalPages": 3,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**通知类型说明**:
+| type | 含义 | targetType | targetId |
+|------|------|-----------|----------|
+| LIKE_FEED | 点赞了你的动态 | FEED | 动态ID |
+| LIKE_COMMENT | 点赞了你的评论 | COMMENT | 评论ID |
+| COMMENT_FEED | 评论了你的动态 | FEED | 动态ID |
+| FOLLOW | 关注了你 | USER | 用户ID |
+| EVENT_JOIN | 有人报名了你的活动 | EVENT | 活动ID |
+| EVENT_QUIT | 有人退出了你的活动 | EVENT | 活动ID |
+| SYSTEM | 系统公告 | null | null |
+
+---
+
+#### GET /api/notifications/unread
+
+查询当前用户未读通知（分页）。
+
+**是否需要Token**: ✅ 是
+
+**请求参数**: 同查询所有通知
+
+**响应示例**: 同查询所有通知（只返回未读的）
+
+---
+
+#### GET /api/notifications/unread/count
+
+获取未读通知数量（用于显示角标）。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": 5
+}
+```
+
+---
+
+#### PUT /api/notifications/{id}/read
+
+将单条通知标记为已读。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| id | long | 是 | 通知ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+#### PUT /api/notifications/read-all
+
+将当前用户所有通知全部标记为已读。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+### 16. 消息接口（私聊+群聊）
+
+---
+
+#### POST /api/messages/send
+
+发送消息（私聊或群聊统一入口，由 `chatType` 区分）。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体（私聊）**:
+```json
+{
+  "chatType": "PRIVATE",
+  "targetUserId": 2,
+  "content": "你好，一起去看电影吗？",
+  "type": "TEXT"
+}
+```
+
+**请求体（群聊）**:
+```json
+{
+  "chatType": "GROUP",
+  "groupId": 1,
+  "content": "大家好！",
+  "type": "TEXT"
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| chatType | string | 是 | PRIVATE=私聊，GROUP=群聊 |
+| targetUserId | long | PRIVATE时必填 | 对方用户ID |
+| groupId | long | GROUP时必填 | 群组ID |
+| content | string | 是 | 消息内容 |
+| type | string | 否 | TEXT（默认）/ IMAGE |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "chatType": "PRIVATE",
+    "sender": {
+      "id": 1,
+      "username": "我",
+      "avatar": "avatar.jpg"
+    },
+    "content": "你好，一起去看电影吗？",
+    "type": "TEXT",
+    "isRecalled": false,
+    "createdAt": "2026-03-11T10:00:00"
+  }
+}
+```
+
+---
+
+#### DELETE /api/messages/{messageId}/recall
+
+撤回消息（仅发送者本人可撤回）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| messageId | long | 是 | 消息ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+#### GET /api/messages/conversations
+
+查询当前用户的私信会话列表（按最后消息时间倒序）。
+
+**是否需要Token**: ✅ 是
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "conversationId": 1,
+        "otherUser": {
+          "id": 2,
+          "username": "影迷小李",
+          "avatar": "avatar.jpg",
+          "userCode": "0002"
+        },
+        "lastMessage": "你好，一起去看电影吗？",
+        "lastMessageAt": "2026-03-11T10:00:00",
+        "unreadCount": 2
+      }
+    ],
+    "totalElements": 10,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### GET /api/messages/conversations/{conversationId}
+
+查询私信会话的消息列表（分页，最新消息在前；同时自动清零当前用户未读数）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| conversationId | long | 是 | 会话ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 30 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": 5,
+        "chatType": "PRIVATE",
+        "sender": {
+          "id": 2,
+          "username": "影迷小李",
+          "avatar": "avatar.jpg"
+        },
+        "content": "好啊！什么时候？",
+        "type": "TEXT",
+        "isRecalled": false,
+        "createdAt": "2026-03-11T10:05:00"
+      },
+      {
+        "id": 4,
+        "chatType": "PRIVATE",
+        "sender": {
+          "id": 1,
+          "username": "我",
+          "avatar": "my_avatar.jpg"
+        },
+        "content": "消息已撤回",
+        "type": "TEXT",
+        "isRecalled": true,
+        "createdAt": "2026-03-11T10:02:00"
+      }
+    ],
+    "totalElements": 20,
+    "totalPages": 1,
+    "size": 30,
+    "number": 0
+  }
+}
+```
+
+---
+
+#### POST /api/messages/groups
+
+创建群聊。
+
+**是否需要Token**: ✅ 是
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "name": "星际穿越观影团",
+  "avatar": "group_avatar.jpg",
+  "memberIds": [2, 3, 4],
+  "maxMembers": 100
+}
+```
+
+**请求参数说明**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | 群名称，最多100字符 |
+| avatar | string | 否 | 群头像文件名 |
+| memberIds | array | 是 | 初始邀请的成员ID列表（不含创建者自己） |
+| maxMembers | int | 否 | 最大成员数，默认100 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "星际穿越观影团",
+    "avatar": "group_avatar.jpg",
+    "owner": {
+      "id": 1,
+      "username": "电影爱好者",
+      "avatar": "avatar.jpg"
+    },
+    "maxMembers": 100,
+    "memberCount": 4,
+    "unreadCount": 0,
+    "myRole": "OWNER",
+    "createdAt": "2026-03-11T10:00:00",
+    "members": [
+      {
+        "userId": 1,
+        "username": "电影爱好者",
+        "avatar": "avatar.jpg",
+        "userCode": "0001",
+        "role": "OWNER",
+        "joinedAt": "2026-03-11T10:00:00"
+      },
+      {
+        "userId": 2,
+        "username": "影迷小李",
+        "avatar": "avatar2.jpg",
+        "userCode": "0002",
+        "role": "MEMBER",
+        "joinedAt": "2026-03-11T10:00:00"
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### GET /api/messages/groups
+
+查询当前用户加入的所有群聊。
+
+**是否需要Token**: ✅ 是
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "星际穿越观影团",
+      "avatar": "group_avatar.jpg",
+      "owner": {
+        "id": 1,
+        "username": "电影爱好者",
+        "avatar": "avatar.jpg"
+      },
+      "maxMembers": 100,
+      "memberCount": 4,
+      "unreadCount": 3,
+      "myRole": "OWNER",
+      "createdAt": "2026-03-11T10:00:00",
+      "members": null
+    }
+  ]
+}
+```
+
+---
+
+#### GET /api/messages/groups/{groupId}
+
+查询群聊详情（含成员列表）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**响应示例**: 同创建群聊（含 members 列表）
+
+---
+
+#### GET /api/messages/groups/{groupId}/messages
+
+查询群聊消息列表（分页，最新消息在前；同时自动清零当前用户未读数）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 30 | 每页数量 |
+
+**响应示例**: 同查询私信消息列表，`chatType` 值为 `GROUP`
+
+---
+
+#### POST /api/messages/groups/{groupId}/invite
+
+邀请成员加入群聊（群主或管理员可操作）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**请求体**:
+```json
+[5, 6, 7]
+```
+
+（用户ID数组）
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+#### DELETE /api/messages/groups/{groupId}/leave
+
+退出群聊（群主不能直接退出，需先转让或解散）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+#### DELETE 
 
 ---
 
@@ -3457,7 +4014,17 @@ Authorization: Bearer {token}
 | 5002 | 无权限操作此评论 | 评论相关接口 |
 | 6001 | 不能关注自己 | 关注接口 |
 | 6002 | 已经关注过了 | 关注接口 |
-| 6003 | 还未关注 | 取消关注接口 |
+| 7001 | 通知不存在或无权限 | 通知接口 |
+| 8001 | 不能与自己发起会话 | 消息接口 |
+| 8002 | 目标用户不存在 | 消息接口 |
+| 8003 | 你不是该群成员 | 群聊接口 |
+| 8004 | 消息不存在 | 消息接口 |
+| 8005 | 只能撤回自己发送的消息 | 消息接口 |
+| 8006 | 消息已撤回 | 消息接口 |
+| 8007 | 只有群主或管理员可以邀请成员 | 群聊接口 |
+| 8008 | 超过群人数上限 | 群聊接口 |
+| 8009 | 群主请先转让群主后再退出 | 群聊接口 |
+| 8010 | 只有群主可以解散群聊 | 群聊接口 |
 
 ---
 
@@ -3493,6 +4060,37 @@ Authorization: Bearer {token}
 ---
 
 ## 更新日志
+
+### 2026-03-11
+- ✅ 实现消息模块完整功能
+  - **通知系统**（5个接口）
+    - GET /api/notifications - 查询所有通知（分页）
+    - GET /api/notifications/unread - 查询未读通知（分页）
+    - GET /api/notifications/unread/count - 获取未读数量（角标）
+    - PUT /api/notifications/{id}/read - 单条标记已读
+    - PUT /api/notifications/read-all - 全部标记已读
+  - **私信**（2个接口）
+    - GET /api/messages/conversations - 私信会话列表
+    - GET /api/messages/conversations/{id} - 私信消息列表（含自动清零未读）
+  - **群聊**（7个接口）
+    - POST /api/messages/groups - 创建群聊
+    - GET /api/messages/groups - 我的群聊列表
+    - GET /api/messages/groups/{id} - 群聊详情+成员列表
+    - GET /api/messages/groups/{id}/messages - 群聊消息列表（含自动清零未读）
+    - POST /api/messages/groups/{id}/invite - 邀请成员
+    - DELETE /api/messages/groups/{id}/leave - 退出群聊
+    - DELETE /api/messages/groups/{id} - 解散群聊（群主）
+  - **消息收发**（2个接口）
+    - POST /api/messages/send - 发送消息（私聊/群聊统一入口）
+    - DELETE /api/messages/{id}/recall - 撤回消息
+- ✅ 通知自动触发点
+    - 点赞动态 → LIKE_FEED 通知
+    - 点赞评论 → LIKE_COMMENT 通知
+    - 发表评论 → COMMENT_FEED 通知（携带评论摘要前50字）
+    - 关注用户 → FOLLOW 通知
+    - 报名活动 → EVENT_JOIN 通知
+    - 退出活动 → EVENT_QUIT 通知
+- ✅ 新增错误码 8001-8010（消息/群聊相关）
 
 ### 2026-03-10
 - ✅ 实现用户账号安全接口（2个接口）
