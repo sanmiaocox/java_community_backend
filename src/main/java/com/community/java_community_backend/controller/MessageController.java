@@ -88,6 +88,18 @@ public class MessageController {
     }
 
     /**
+     * GET /api/messages/groups/event/{eventId}
+     * 通过活动ID查询对应群聊
+     */
+    @GetMapping("/groups/event/{eventId}")
+    public ApiResponse<GroupChatResponse> getGroupByEventId(
+            @PathVariable Long eventId,
+            HttpServletRequest request) {
+        Long userId = jwtUtil.getUserIdFromToken(extractToken(request));
+        return ApiResponse.success(groupChatService.getGroupByEventId(eventId, userId));
+    }
+
+    /**
      * GET /api/messages/groups/{groupId}
      * 查询群聊详情（含成员列表）
      */
@@ -126,6 +138,19 @@ public class MessageController {
             HttpServletRequest request) {
         Long userId = jwtUtil.getUserIdFromToken(extractToken(request));
         groupChatService.inviteMembers(groupId, userId, userIds);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * POST /api/messages/groups/{groupId}/join
+     * 主动加入群聊
+     */
+    @PostMapping("/groups/{groupId}/join")
+    public ApiResponse<Void> joinGroup(
+            @PathVariable Long groupId,
+            HttpServletRequest request) {
+        Long userId = jwtUtil.getUserIdFromToken(extractToken(request));
+        groupChatService.joinGroup(groupId, userId);
         return ApiResponse.success(null);
     }
 
@@ -190,4 +215,5 @@ public class MessageController {
         return null;
     }
 }
+
 

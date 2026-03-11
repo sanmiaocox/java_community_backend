@@ -44,6 +44,7 @@ public class GroupChatService {
                 .name(request.getName())
                 .avatar(request.getAvatar())
                 .ownerId(ownerId)
+                .eventId(request.getEventId())
                 .maxMembers(request.getMaxMembers() != null ? request.getMaxMembers() : 100)
                 .build();
         group = groupChatRepository.save(group);
@@ -73,6 +74,39 @@ public class GroupChatService {
 
         log.info("用户{}创建了群聊: {}", ownerId, group.getId());
         return toDetailResponse(group, ownerId);
+    }
+
+    /**
+     * 主动加入群聊（无需邀请）
+     */
+    @Transactional
+    public void joinGroup(Long groupId, Long userId) {
+        GroupChat group = groupChatRepository.findById(groupId)
+                .orElseThrow(() -> new BusinessException(404, "群聊不存在"));
+        if (groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
+            return; // 已是成员，幂等处理
+        }
+        long currentCount = groupMemberRepository.countByGroupId(groupId);
+        if (currentCount >= group.getMaxMembers()) {
+            throw new BusinessException(400, "群人数已达上限");
+        }
+        groupMemberRepository.save(GroupMember.builder()
+                .groupId(groupId)
+                .userId(userId)
+                .role(GroupMember.GroupRole.MEMBER)
+                .unreadCount(0)
+                .build());
+        log.info("用户{}加入了群聊{}", userId, groupId);
+    }
+
+    /**
+     * 通过活动ID查询对应群聊
+     */
+    @Transactional(readOnly = true)
+    public GroupChatResponse getGroupByEventId(Long eventId, Long currentUserId) {
+        GroupChat group = groupChatRepository.findByEventId(eventId)
+                .orElseThrow(() -> new BusinessException(404, "该活动暂无对应群聊"));
+        return toDetailResponse(group, currentUserId);
     }
 
     /**

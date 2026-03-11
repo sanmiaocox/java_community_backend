@@ -1,9 +1,9 @@
 package com.community.java_community_backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,11 +19,14 @@ public class CreateGroupRequest {
     /** 群组头像 URL（可选） */
     private String avatar;
 
-    /** 初始邀请的成员用户ID列表（不含群主自己） */
-    @NotEmpty(message = "至少邀请一名成员")
-    private List<Long> memberIds;
+    /** 初始邀请的成员用户ID列表（不含群主自己，可为空） */
+    private List<Long> memberIds = new ArrayList<>();
+
+    /** 关联的活动ID（可选，活动群聊时传入） */
+    private Long eventId;
 
     /** 最大成员数，默认100 */
     private Integer maxMembers = 100;
 }
+
 

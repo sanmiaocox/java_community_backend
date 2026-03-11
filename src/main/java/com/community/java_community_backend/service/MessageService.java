@@ -106,11 +106,11 @@ public class MessageService {
     // ===================== 查询消息 =====================
 
     /**
-     * 查询私信会话的消息列表（分页，最新在前）
+     * 查询私信会话的消息列表（分页，最新在前；同时清零当前用户未读数）
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public Page<MessageResponse> getPrivateMessages(Long conversationId, Long currentUserId, Pageable pageable) {
-        // 校验当前用户有权限查看该会话
+        // 清零未读数（需要写事务，不能用 readOnly = true）
         conversationService.clearUnread(conversationId, currentUserId);
         return messageRepository
                 .findByConversationIdOrderByCreatedAtDesc(conversationId, pageable)
@@ -182,4 +182,5 @@ public class MessageService {
                 .build();
     }
 }
+
 

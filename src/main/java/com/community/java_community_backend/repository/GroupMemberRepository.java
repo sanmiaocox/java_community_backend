@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,14 +36,17 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
      * 批量增加群内所有成员（除发送者外）的未读数
      */
     @Modifying
+    @Transactional
     @Query("UPDATE GroupMember gm SET gm.unreadCount = gm.unreadCount + 1 " +
            "WHERE gm.groupId = :groupId AND gm.userId != :senderId")
     void incrementUnreadExcludeSender(@Param("groupId") Long groupId, @Param("senderId") Long senderId);
 
     /** 清零某用户在某群的未读数 */
     @Modifying
+    @Transactional
     @Query("UPDATE GroupMember gm SET gm.unreadCount = 0 " +
            "WHERE gm.groupId = :groupId AND gm.userId = :userId")
     void clearUnread(@Param("groupId") Long groupId, @Param("userId") Long userId);
 }
+
 

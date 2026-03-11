@@ -42,6 +42,10 @@ public class GroupChat {
     @Column(name = "owner_id", nullable = false)
     private Long ownerId;
 
+    /** 关联的活动ID（可选，活动群聊时有值） */
+    @Column(name = "event_id", unique = true)
+    private Long eventId;
+
     /** 最大成员数，默认100 */
     @Column(name = "max_members", nullable = false)
     private Integer maxMembers = 100;
@@ -59,4 +63,5 @@ public class GroupChat {
     @JoinColumn(name = "owner_id", insertable = false, updatable = false)
     private User owner;
 }
+
 

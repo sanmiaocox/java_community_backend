@@ -1,6 +1,6 @@
 # 电影交流社区后端API文档
 
-> **最后更新**: 2026-03-11  
+> **最后更新**: 2026-03-12  
 > **基础URL**: 本机url`http://localhost:7070`  安卓虚拟机url‘http://10.0.2.2:7070’
 > **API版本**: v1.0
 
@@ -3888,6 +3888,25 @@ Content-Type: application/json
 
 ---
 
+#### GET /api/messages/groups/event/{eventId}
+
+通过活动ID查询对应群聊。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| eventId | long | 是 | 活动ID |
+
+**响应示例**: 同创建群聊（含 members 列表）
+
+**使用场景**:
+- 用户参加活动后，通过活动ID直接进入对应群聊
+- 活动详情页「进入群聊」按钮
+
+---
+
 #### GET /api/messages/groups/{groupId}
 
 查询群聊详情（含成员列表）。
@@ -3975,7 +3994,47 @@ Content-Type: application/json
 
 ---
 
-#### DELETE 
+#### POST /api/messages/groups/{groupId}/join
+
+主动加入群聊（无需邀请）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+#### DELETE /api/messages/groups/{groupId}
+
+解散群聊（仅群主可操作，删除后群聊消息全部清除）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
 
 ---
 
@@ -4060,6 +4119,16 @@ Content-Type: application/json
 ---
 
 ## 更新日志
+
+### 2026-03-12
+- 🐛 修复消息已读功能不生效的 Bug
+  - **根本原因**: `MessageService.getPrivateMessages` 标注了 `@Transactional(readOnly = true)`，只读事务中写操作（clearUnread）不会提交，导致未读数永远无法清零
+  - **修复**: 将 `getPrivateMessages` 改为普通 `@Transactional`，确保清零操作在可写事务中执行
+  - **修复**: `GroupMemberRepository` 中 `@Modifying` 方法补充 `@Transactional` 注解，确保批量更新/清零未读数可在 Repository 层独立执行
+- 📝 补充文档缺失接口
+  - 新增 `GET /api/messages/groups/event/{eventId}` — 通过活动ID查询对应群聊
+  - 新增 `POST /api/messages/groups/{groupId}/join` — 主动加入群聊
+  - 补全 `DELETE /api/messages/groups/{groupId}` — 解散群聊（原文档条目不完整）
 
 ### 2026-03-11
 - ✅ 实现消息模块完整功能

@@ -159,6 +159,19 @@ public class EventController {
     }
     
     /**
+     * 移除参与者（仅活动创建人）
+     */
+    @DeleteMapping("/{eventId}/participants/{userId}")
+    public ResponseEntity<ApiResponse<Void>> removeParticipant(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long eventId,
+            @PathVariable Long userId) {
+        Long operatorId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
+        eventService.removeParticipant(eventId, operatorId, userId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /**
      * 检查是否已参加活动
      */
     @GetMapping("/{eventId}/joined")

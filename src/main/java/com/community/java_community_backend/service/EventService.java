@@ -11,6 +11,8 @@ import com.community.java_community_backend.entity.User;
 import com.community.java_community_backend.entity.Notification;
 import com.community.java_community_backend.repository.EventParticipantRepository;
 import com.community.java_community_backend.repository.EventRepository;
+import com.community.java_community_backend.repository.GroupChatRepository;
+import com.community.java_community_backend.repository.GroupMemberRepository;
 import com.community.java_community_backend.repository.MovieRepository;
 import com.community.java_community_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,8 @@ public class EventService {
     private final UserRepository userRepository;
     private final MovieRepository movieRepository;
     private final NotificationService notificationService;
+    private final GroupChatRepository groupChatRepository;
+    private final GroupMemberRepository groupMemberRepository;
     
     /**
      * 创建活动
@@ -229,6 +233,35 @@ public class EventService {
                 "EVENT", eventId, null);
     }
     
+    /**
+     * 管理员移除参与者（仅活动创建人可操作）
+     */
+    @Transactional
+    public void removeParticipant(Long eventId, Long operatorId, Long targetUserId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("活动不存在"));
+
+        // 只有创建人可以移除参与者
+        if (!event.getCreator().getId().equals(operatorId)) {
+            throw new RuntimeException("只有创建人可以移除参与者");
+        }
+
+        EventParticipant participant = participantRepository.findByEventIdAndUserId(eventId, targetUserId)
+                .orElseThrow(() -> new RuntimeException("该用户未参加此活动"));
+
+        participantRepository.delete(participant);
+
+        event.setParticipants(Math.max(0, event.getParticipants() - 1));
+        eventRepository.save(event);
+
+        // 同步将其从活动群聊中移除
+        groupChatRepository.findByEventId(eventId).ifPresent(group -> {
+            if (groupMemberRepository.existsByGroupIdAndUserId(group.getId(), targetUserId)) {
+                groupMemberRepository.deleteByGroupIdAndUserId(group.getId(), targetUserId);
+            }
+        });
+    }
+
     /**
      * 取消参加活动
      */
