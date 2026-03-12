@@ -6,11 +6,14 @@ import com.community.java_community_backend.entity.GroupChat;
 import com.community.java_community_backend.entity.GroupMember;
 import com.community.java_community_backend.entity.User;
 import com.community.java_community_backend.exception.BusinessException;
+import com.community.java_community_backend.repository.EventParticipantRepository;
 import com.community.java_community_backend.repository.GroupChatRepository;
 import com.community.java_community_backend.repository.GroupMemberRepository;
 import com.community.java_community_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ public class GroupChatService {
     private final GroupChatRepository groupChatRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
+    private final EventParticipantRepository eventParticipantRepository;
 
     // ===================== 群组管理 =====================
 
@@ -145,6 +149,7 @@ public class GroupChatService {
                             .memberCount(groupMemberRepository.countByGroupId(group.getId()))
                             .unreadCount(membership.getUnreadCount())
                             .myRole(membership.getRole())
+                            .eventId(group.getEventId())
                             .createdAt(group.getCreatedAt())
                             .build();
                 })
@@ -215,6 +220,70 @@ public class GroupChatService {
         groupChatRepository.delete(group);
     }
 
+    /**
+     * 获取群成员列表（分页）
+     */
+    @Transactional(readOnly = true)
+    public Page<GroupChatResponse.MemberDTO> getGroupMembers(Long groupId, Long currentUserId, Pageable pageable) {
+        // 验证当前用户是群成员
+        if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, currentUserId)) {
+            throw new BusinessException(403, "你不是该群成员");
+        }
+
+        Page<GroupMember> memberPage = groupMemberRepository.findByGroupIdOrderByJoinedAtAsc(groupId, pageable);
+        
+        return memberPage.map(gm -> {
+            User u = userRepository.findById(gm.getUserId()).orElse(null);
+            if (u == null) return null;
+            return GroupChatResponse.MemberDTO.builder()
+                    .userId(u.getId())
+                    .username(u.getUsername())
+                    .avatar(u.getAvatar())
+                    .userCode(u.getUserCode())
+                    .role(gm.getRole())
+                    .joinedAt(gm.getJoinedAt())
+                    .build();
+        });
+    }
+
+    /**
+     * 踢出群成员（仅群主或管理员）
+     * 如果群聊关联了活动，同时移除活动参与者
+     */
+    @Transactional
+    public void removeMember(Long groupId, Long operatorId, Long targetUserId) {
+        GroupChat group = groupChatRepository.findById(groupId)
+                .orElseThrow(() -> new BusinessException(404, "群聊不存在"));
+
+        // 验证操作者权限
+        GroupMember operator = groupMemberRepository.findByGroupIdAndUserId(groupId, operatorId)
+                .orElseThrow(() -> new BusinessException(403, "你不是该群成员"));
+
+        if (operator.getRole() == GroupMember.GroupRole.MEMBER) {
+            throw new BusinessException(403, "只有群主或管理员可以踢出成员");
+        }
+
+        // 不能踢出群主
+        if (group.getOwnerId().equals(targetUserId)) {
+            throw new BusinessException(400, "不能踢出群主");
+        }
+
+        // 验证目标用户是群成员
+        GroupMember target = groupMemberRepository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new BusinessException(400, "该用户不是群成员"));
+
+        // 删除群成员
+        groupMemberRepository.deleteByGroupIdAndUserId(groupId, targetUserId);
+
+        // 如果群聊关联了活动，同时移除活动参与者
+        if (group.getEventId() != null) {
+            eventParticipantRepository.findByEventIdAndUserId(group.getEventId(), targetUserId)
+                    .ifPresent(eventParticipantRepository::delete);
+        }
+
+        log.info("用户{}被踢出群聊{}，操作者{}", targetUserId, groupId, operatorId);
+    }
+
     // ===================== 转换 =====================
 
     private GroupChatResponse toDetailResponse(GroupChat group, Long currentUserId) {
@@ -252,6 +321,7 @@ public class GroupChatService {
                 .memberCount((long) memberList.size())
                 .unreadCount(myMembership != null ? myMembership.getUnreadCount() : 0)
                 .myRole(myMembership != null ? myMembership.getRole() : null)
+                .eventId(group.getEventId())
                 .createdAt(group.getCreatedAt())
                 .members(memberDTOs)
                 .build();

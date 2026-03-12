@@ -3918,7 +3918,93 @@ Content-Type: application/json
 |------|------|------|------|
 | groupId | long | 是 | 群组ID |
 
-**响应示例**: 同创建群聊（含 members 列表）
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "星际穿越观影团",
+    "avatar": "group_avatar.jpg",
+    "owner": {
+      "id": 1,
+      "username": "电影爱好者",
+      "avatar": "avatar.jpg"
+    },
+    "maxMembers": 100,
+    "memberCount": 4,
+    "unreadCount": 0,
+    "myRole": "OWNER",
+    "eventId": 5,
+    "createdAt": "2026-03-11T10:00:00",
+    "members": [
+      {
+        "userId": 1,
+        "username": "电影爱好者",
+        "avatar": "avatar.jpg",
+        "userCode": "0001",
+        "role": "OWNER",
+        "joinedAt": "2026-03-11T10:00:00"
+      },
+      {
+        "userId": 2,
+        "username": "影迷小李",
+        "avatar": "avatar2.jpg",
+        "userCode": "0002",
+        "role": "MEMBER",
+        "joinedAt": "2026-03-11T10:05:00"
+      },
+      {
+        "userId": 3,
+        "username": "电影达人",
+        "avatar": "avatar3.jpg",
+        "userCode": "0003",
+        "role": "MEMBER",
+        "joinedAt": "2026-03-11T10:10:00"
+      },
+      {
+        "userId": 4,
+        "username": "观影爱好者",
+        "avatar": "avatar4.jpg",
+        "userCode": "0004",
+        "role": "MEMBER",
+        "joinedAt": "2026-03-11T10:15:00"
+      }
+    ]
+  }
+}
+```
+
+**响应字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | long | 群组ID |
+| name | string | 群名称 |
+| avatar | string | 群头像文件名 |
+| owner | object | 群主信息（包含id、username、avatar） |
+| maxMembers | int | 最大成员数 |
+| memberCount | int | 当前成员数 |
+| unreadCount | int | 当前用户未读消息数 |
+| myRole | string | 当前用户在群中的角色（OWNER/MEMBER） |
+| eventId | long | 关联的活动ID（如果有） |
+| createdAt | datetime | 群创建时间 |
+| members | array | 成员列表（包含所有成员信息） |
+
+**成员对象字段说明**:
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| userId | long | 用户ID |
+| username | string | 用户名 |
+| avatar | string | 用户头像文件名 |
+| userCode | string | 用户编码 |
+| role | string | 成员角色（OWNER/MEMBER） |
+| joinedAt | datetime | 加入时间 |
+
+**使用场景**:
+- 进入群聊详情页面时调用
+- 显示群信息和成员列表
+- 检查当前用户的角色（判断是否有管理权限）
 
 ---
 
@@ -3940,6 +4026,114 @@ Content-Type: application/json
 | size | int | 否 | 30 | 每页数量 |
 
 **响应示例**: 同查询私信消息列表，`chatType` 值为 `GROUP`
+
+---
+
+#### GET /api/messages/groups/{groupId}/members
+
+获取群成员列表（分页）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+
+**请求参数**:
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| page | int | 否 | 0 | 页码 |
+| size | int | 否 | 20 | 每页数量 |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "userId": 1,
+        "username": "电影爱好者",
+        "avatar": "avatar.jpg",
+        "userCode": "0001",
+        "role": "OWNER",
+        "joinedAt": "2026-03-11T10:00:00"
+      },
+      {
+        "userId": 2,
+        "username": "影迷小李",
+        "avatar": "avatar2.jpg",
+        "userCode": "0002",
+        "role": "MEMBER",
+        "joinedAt": "2026-03-11T10:05:00"
+      }
+    ],
+    "totalElements": 4,
+    "totalPages": 1,
+    "size": 20,
+    "number": 0
+  }
+}
+```
+
+**使用场景**:
+- 群聊成员列表页面（支持分页加载）
+- 大群成员数量多时，避免一次性加载所有成员
+
+**功能说明**:
+- 返回分页的群成员列表
+- 每个成员包含：用户ID、用户名、头像、用户编码、角色、加入时间
+- 按加入时间升序排列
+- 只有群成员才能查看成员列表
+---
+
+#### DELETE /api/messages/groups/{groupId}/members/{userId}
+
+踢出群成员（仅群主或管理员）。
+
+**是否需要Token**: ✅ 是
+
+**路径参数**:
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| groupId | long | 是 | 群组ID |
+| userId | long | 是 | 要踢出的用户ID |
+
+**响应示例**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+**错误响应**:
+```json
+{
+  "code": 403,
+  "message": "只有群主或管理员可以踢出成员",
+  "data": null
+}
+```
+
+```json
+{
+  "code": 400,
+  "message": "不能踢出群主",
+  "data": null
+}
+```
+
+**使用场景**:
+- 群主或管理员移除违规成员
+- 如果群聊关联了活动，同时移除该用户的活动参与记录
+
+**特殊处理**:
+- 如果群聊关联了活动（eventId 不为空），踢出成员时会同时调用 `DELETE /api/events/{eventId}/participants/{userId}` 移除活动参与者
+- 不能踢出群主
 
 ---
 
@@ -4084,6 +4278,8 @@ Content-Type: application/json
 | 8008 | 超过群人数上限 | 群聊接口 |
 | 8009 | 群主请先转让群主后再退出 | 群聊接口 |
 | 8010 | 只有群主可以解散群聊 | 群聊接口 |
+| 8011 | 只有群主或管理员可以踢出成员 | 群聊接口 |
+| 8012 | 不能踢出群主 | 群聊接口 |
 
 ---
 
@@ -4129,6 +4325,15 @@ Content-Type: application/json
   - 新增 `GET /api/messages/groups/event/{eventId}` — 通过活动ID查询对应群聊
   - 新增 `POST /api/messages/groups/{groupId}/join` — 主动加入群聊
   - 补全 `DELETE /api/messages/groups/{groupId}` — 解散群聊（原文档条目不完整）
+- ✅ 实现群成员管理功能（2个新接口）
+  - **GET /api/messages/groups/{groupId}/members** — 获取群成员列表（分页）
+    - 支持分页加载，避免大群一次性加载所有成员
+    - 返回成员信息：用户ID、用户名、头像、用户编码、角色、加入时间
+  - **DELETE /api/messages/groups/{groupId}/members/{userId}** — 踢出群成员（仅群主或管理员）
+    - 只有群主或管理员可以踢出成员
+    - 不能踢出群主
+    - 如果群聊关联了活动，同时移除该用户的活动参与记录
+- ✅ 新增错误码 8011-8012（群成员管理相关）
 
 ### 2026-03-11
 - ✅ 实现消息模块完整功能

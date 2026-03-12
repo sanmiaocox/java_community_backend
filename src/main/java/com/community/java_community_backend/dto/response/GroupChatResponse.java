@@ -32,6 +32,9 @@ public class GroupChatResponse {
     /** 当前用户角色（查群详情时填写） */
     private GroupMember.GroupRole myRole;
 
+    /** 关联的活动ID（如果有） */
+    private Long eventId;
+
     private LocalDateTime createdAt;
 
     /** 成员列表（查群详情时填写） */

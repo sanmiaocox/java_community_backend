@@ -1,6 +1,8 @@
 package com.community.java_community_backend.repository;
 
 import com.community.java_community_backend.entity.GroupMember;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,9 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     /** 查询群组的所有成员 */
     List<GroupMember> findByGroupIdOrderByJoinedAtAsc(Long groupId);
+
+    /** 查询群组的成员列表（分页） */
+    Page<GroupMember> findByGroupIdOrderByJoinedAtAsc(Long groupId, Pageable pageable);
 
     /** 查询用户加入的所有群组的成员记录 */
     List<GroupMember> findByUserId(Long userId);

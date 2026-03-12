@@ -180,6 +180,36 @@ public class MessageController {
         return ApiResponse.success(null);
     }
 
+    /**
+     * GET /api/messages/groups/{groupId}/members
+     * 获取群成员列表（分页）
+     */
+    @GetMapping("/groups/{groupId}/members")
+    public ApiResponse<Page<GroupChatResponse.MemberDTO>> getGroupMembers(
+            @PathVariable Long groupId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request) {
+        Long userId = jwtUtil.getUserIdFromToken(extractToken(request));
+        Page<GroupChatResponse.MemberDTO> data = groupChatService.getGroupMembers(
+                groupId, userId, PageRequest.of(page, size));
+        return ApiResponse.success(data);
+    }
+
+    /**
+     * DELETE /api/messages/groups/{groupId}/members/{userId}
+     * 踢出群成员（仅群主或管理员）
+     */
+    @DeleteMapping("/groups/{groupId}/members/{userId}")
+    public ApiResponse<Void> removeMember(
+            @PathVariable Long groupId,
+            @PathVariable Long userId,
+            HttpServletRequest request) {
+        Long operatorId = jwtUtil.getUserIdFromToken(extractToken(request));
+        groupChatService.removeMember(groupId, operatorId, userId);
+        return ApiResponse.success(null);
+    }
+
     // ==================== 发送 & 撤回（私聊+群聊统一入口） ====================
 
     /**
